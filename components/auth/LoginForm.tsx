@@ -3,6 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Eye, EyeOff, Lock, Mail, Shapes, Star } from "lucide-react";
+import { useRouter } from "next/navigation"
+import { login } from "../../app/services/auth/service";
 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,6 +17,48 @@ import { Label } from "@/components/ui/label";
 
 export function LoginForm() {
     const [showPassword, setShowPassword] = useState(false);
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("")
+
+    const router = useRouter();
+
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState("");
+
+    const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+
+        setError("");
+        setLoading(true);
+        try {
+
+            await login({
+                email,
+                password,
+            });
+
+            /*
+             * Las cookies ya fueron creadas
+             * por Spring Boot.
+             *
+             * No necesitamos guardar ningún token.
+             */
+
+            router.push("/dashboard");
+
+        } catch (error) {
+
+            setError(
+                error instanceof Error
+                    ? error.message
+                    : "No se pudo iniciar sesión"
+            );
+
+        } finally {
+
+            setLoading(false);
+        }
+    }
 
     return (
         <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#DCEEF7] px-4 py-12 font-sans text-[#1F2A44]">
@@ -61,7 +105,7 @@ export function LoginForm() {
                         Prepara, reparte y revisa las actividades de tu grupo.
                     </p>
 
-                    <form className="mt-8 space-y-5">
+                    <form onSubmit={handleSubmit} className="mt-8 space-y-5">
                         <div className="space-y-2">
                             <Label htmlFor="email" className="text-sm font-semibold">
                                 Correo electrónico
@@ -73,6 +117,8 @@ export function LoginForm() {
                                     type="email"
                                     autoComplete="email"
                                     placeholder="maestra@ejemplo.com"
+                                    value={email}
+                                    onChange={(event) => setEmail(event.target.value)}
                                     className="h-12 rounded-xl border-2 border-[#D5DEE8] pl-10 text-base focus-visible:border-[#187A4C] focus-visible:ring-[#187A4C]/20"
                                 />
                             </div>
@@ -97,6 +143,8 @@ export function LoginForm() {
                                     type={showPassword ? "text" : "password"}
                                     autoComplete="current-password"
                                     placeholder="••••••••"
+                                    value={password}
+                                    onChange={(event) => setPassword(event.target.value)}
                                     className="h-12 rounded-xl border-2 border-[#D5DEE8] pl-10 pr-11 text-base focus-visible:border-[#187A4C] focus-visible:ring-[#187A4C]/20"
                                 />
                                 <button
@@ -116,12 +164,19 @@ export function LoginForm() {
                             </div>
                         </div>
 
+                        {error && (
+                            <p className="text-sm font-medium text-[#FF6B5B]">
+                                {error}
+                            </p>
+                        )}
+
                         {/* Botón tipo "pegatina" con relieve */}
                         <button
                             type="submit"
                             className="font-display h-12 w-full rounded-full bg-[#187A4C] text-lg font-semibold text-white shadow-[0_4px_0_#0F5233] transition-transform hover:bg-[#1B8855] focus-visible:outline focus-visible:outline-offset-2 focus-visible:outline-[#187A4C] active:translate-y-1 active:shadow-[0_0_0_#0F5233]"
+                            disabled={loading}
                         >
-                            Iniciar sesión
+                            {loading ? "Iniciando sesión..." : "Iniciar sesión"}
                         </button>
                     </form>
 
