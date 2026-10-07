@@ -85,7 +85,7 @@ export function DashboardContent() {
                                 <li key={step.href}>
                                     <Link
                                         href={step.href}
-                                        className="group flex items-center gap-4 rounded-2xl border-2 border-[#E3E8EF] p-4 transition-colors hover:border-[#187A4C] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#187A4C]"
+                                        className="group flex items-center gap-4 rounded-2xl border-2 border-[#E3E8EF] p-4 transition-colors hover:border-[#187A4C] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#187A4C]"
                                     >
                                         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#187A4C] font-display text-base font-semibold text-white">
                                             {i + 1}
