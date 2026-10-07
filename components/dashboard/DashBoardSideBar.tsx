@@ -15,7 +15,6 @@ interface DashboardSidebarProps {
     onLogout?: () => void;
 }
 
-// Ajusta los href a tus rutas reales
 const menuItems = [
     { label: "Inicio", href: "/dashboard", icon: LayoutDashboard },
     { label: "Alumnos", href: "/students", icon: Users },
@@ -28,12 +27,10 @@ export function DashboardSidebar({ onLogout }: DashboardSidebarProps) {
     const pathname = usePathname();
 
     const isActive = (href: string) =>
-        href === "/dashboard"
-            ? pathname === href
-            : pathname.startsWith(href);
+        href === "/dashboard" ? pathname === href : pathname.startsWith(href);
 
     return (
-        <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-[#D5DEE8] bg-white lg:flex">
+        <aside className="hidden h-screen w-64 shrink-0 flex-col border-r border-[#D5DEE8] bg-white lg:flex">
             {/* Logo */}
             <div className="flex h-20 items-center gap-3 border-b border-[#D5DEE8] px-6">
                 <div className="flex h-11 w-11 -rotate-3 items-center justify-center rounded-xl bg-[#FFD84D]">
@@ -62,7 +59,7 @@ export function DashboardSidebar({ onLogout }: DashboardSidebarProps) {
                             key={href}
                             href={href}
                             aria-current={active ? "page" : undefined}
-                            className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#187A4C] ${
+                            className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-offset-2 focus-visible:outline-[#187A4C] ${
                                 active
                                     ? "bg-[#187A4C] text-white shadow-[0_3px_0_#0F5233]"
                                     : "text-[#4A5568] hover:bg-[#DCEEF7] hover:text-[#187A4C]"
@@ -80,7 +77,7 @@ export function DashboardSidebar({ onLogout }: DashboardSidebarProps) {
                 <button
                     type="button"
                     onClick={onLogout}
-                    className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold text-[#C2392B] transition-colors hover:bg-[#FFF1EF] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FF6B5B]"
+                    className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold text-[#C2392B] transition-colors hover:bg-[#FFF1EF] focus-visible:outline focus-visible:outline-offset-2 focus-visible:outline-[#FF6B5B]"
                 >
                     <LogOut size={20} strokeWidth={2} />
                     <span>Cerrar sesión</span>

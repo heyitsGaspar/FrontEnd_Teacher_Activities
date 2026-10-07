@@ -289,7 +289,7 @@ export function StudentsContent() {
 
     return (
         <>
-            <main className="space-y-6 p-6 lg:p-8">
+            <div className="space-y-6 p-6 lg:p-8">
                 {/* Encabezado */}
                 <section className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                     <div>
@@ -397,7 +397,7 @@ export function StudentsContent() {
                             )}
                     </CardContent>
                 </Card>
-            </main>
+            </div>
 
             {/* Agregar alumno */}
             <AddStudentDialog

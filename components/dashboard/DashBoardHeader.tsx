@@ -17,7 +17,7 @@ export function DashboardHeader({ userName }: DashboardHeaderProps) {
     const todayLabel = today.charAt(0).toUpperCase() + today.slice(1);
 
     return (
-        <header className="sticky top-0 z-10 flex h-20 items-center justify-between border-b border-[#D5DEE8] bg-white/90 px-6 backdrop-blur sm:px-8">
+        <header className="flex h-20 shrink-0 items-center justify-between border-b border-[#D5DEE8] bg-white px-6 sm:px-8">
             <div>
                 <p className="text-sm text-[#4A5568]">{todayLabel}</p>
                 <h2 className="font-display text-2xl font-semibold text-[#1F2A44]">
