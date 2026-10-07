@@ -1,12 +1,13 @@
 "use client";
 
-import { Bell } from "lucide-react";
+import { Bell, Menu } from "lucide-react";
 
 interface DashboardHeaderProps {
     userName: string;
+    onMenuClick?: () => void;
 }
 
-export function DashboardHeader({ userName }: DashboardHeaderProps) {
+export function DashboardHeader({ userName, onMenuClick }: DashboardHeaderProps) {
     const firstName = userName.trim().split(" ")[0];
 
     const today = new Date().toLocaleDateString("es-MX", {
@@ -17,15 +18,26 @@ export function DashboardHeader({ userName }: DashboardHeaderProps) {
     const todayLabel = today.charAt(0).toUpperCase() + today.slice(1);
 
     return (
-        <header className="flex h-20 shrink-0 items-center justify-between border-b border-[#D5DEE8] bg-white px-6 sm:px-8">
-            <div>
-                <p className="text-sm text-[#4A5568]">{todayLabel}</p>
-                <h2 className="font-display text-2xl font-semibold text-[#1F2A44]">
-                    ¡Hola, {firstName}! 👋
-                </h2>
+        <header className="flex h-20 shrink-0 items-center justify-between gap-3 border-b border-[#D5DEE8] bg-white px-4 sm:px-8">
+            <div className="flex min-w-0 items-center gap-3">
+                <button
+                    type="button"
+                    onClick={onMenuClick}
+                    aria-label="Abrir menú"
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-[#1F2A44] transition-colors hover:bg-[#DCEEF7] hover:text-[#187A4C] focus-visible:outline focus-visible:outline-[#187A4C] lg:hidden"
+                >
+                    <Menu size={22} strokeWidth={2} />
+                </button>
+
+                <div className="min-w-0">
+                    <p className="hidden text-sm text-[#4A5568] sm:block">{todayLabel}</p>
+                    <h2 className="truncate font-display text-xl font-semibold text-[#1F2A44] sm:text-2xl">
+                        ¡Hola, {firstName}! 👋
+                    </h2>
+                </div>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex shrink-0 items-center gap-3">
                 <button
                     type="button"
                     aria-label="Notificaciones"
