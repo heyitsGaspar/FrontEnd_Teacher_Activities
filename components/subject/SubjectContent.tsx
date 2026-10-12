@@ -216,8 +216,8 @@ export function SubjectsContent() {
     };
 
     /**
-     * Elimina la materia seleccionada.
-     */
+ * Elimina la materia seleccionada.
+ */
     const handleDelete = async () => {
         if (!selectedSubject) {
             return;
@@ -248,27 +248,28 @@ export function SubjectsContent() {
                 description: "La materia se eliminó correctamente.",
             });
         } catch (error) {
-            console.error("Error eliminando materia:", error);
-
             /*
-             * Si posteriormente el backend devuelve
-             * un 409 porque la materia tiene actividades,
-             * aquí podremos mostrar un mensaje específico.
+             * 409: la materia tiene actividades y no se puede
+             * eliminar. Es un caso esperado, no un error.
              */
             if (
                 axios.isAxiosError(error) &&
                 error.response?.status === 409
             ) {
+                setConfirmDeleteOpen(false);
+
                 setAppDialog({
                     open: true,
                     type: "warning",
                     title: "No se puede eliminar",
                     description:
-                        "No se puede eliminar esta materia porque tiene información relacionada.",
+                        "Esta materia tiene actividades. Elimínalas o cámbialas a otra materia y vuelve a intentarlo.",
                 });
 
                 return;
             }
+
+            console.error("Error eliminando materia:", error);
 
             setAppDialog({
                 open: true,
