@@ -4,23 +4,16 @@ import type {
     SubmissionBoardData,
 } from "../../../types/submissions";
 
-const DEFAULT_ACTIVITIES = 6;
+
 
 /**
- * Obtiene la tabla de entregas: alumnos (A-Z)
- * y las últimas actividades.
+ * Obtiene la tabla de entregas: todos los alumnos (A-Z)
+ * y todas las actividades, de la más antigua a la más reciente.
  */
-export async function getSubmissionBoard(
-    activities = DEFAULT_ACTIVITIES
-): Promise<SubmissionBoardData> {
+export async function getSubmissionBoard(): Promise<SubmissionBoardData> {
 
     const response = await api.get<SubmissionBoardData>(
-        "/api/submissions/board",
-        {
-            params: {
-                activities,
-            },
-        }
+        "/api/submissions/board"
     );
 
     return response.data;

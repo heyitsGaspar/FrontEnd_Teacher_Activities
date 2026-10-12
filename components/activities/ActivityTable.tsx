@@ -14,7 +14,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-
+import { DeliveryStatus } from "./DeliveryStatus";
 import type { Activity } from "@/types/activities";
 
 import { formatActivityDate } from "./activity-utils";
@@ -95,6 +95,7 @@ export function ActivityTable({
                     <TableHead className="hidden md:table-cell">
                         Fecha
                     </TableHead>
+                    <TableHead className="hidden md:table-cell">Entregas</TableHead>
                     <TableHead className="text-right">Acciones</TableHead>
                 </TableRow>
             </TableHeader>
@@ -138,6 +139,9 @@ export function ActivityTable({
 
                         <TableCell className="hidden whitespace-nowrap text-[#4A5568] md:table-cell">
                             {formatActivityDate(activity.activityDate)}
+                        </TableCell>    
+                        <TableCell className="hidden md:table-cell">
+                            <DeliveryStatus activity={activity} />
                         </TableCell>
 
                         <TableCell>

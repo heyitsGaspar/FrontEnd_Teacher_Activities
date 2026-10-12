@@ -80,9 +80,14 @@ export function ActiveActivityCard({
                                 {activity.subjectName}
                             </span>
 
+
                             <span className="inline-flex items-center gap-1.5 text-white/90">
                                 <CalendarDays size={16} />
                                 {formatActivityDate(activity.activityDate)}
+                            </span>
+
+                            <span className="rounded-full bg-white/20 px-3 py-1 font-medium">
+                                {activity.submissionsCount} de {activity.totalStudents} entregaron
                             </span>
                         </div>
                     </div>

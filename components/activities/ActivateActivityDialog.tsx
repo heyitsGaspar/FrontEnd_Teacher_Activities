@@ -18,6 +18,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import type { Activity } from "@/types/activities";
 
 import { formatActivityDate } from "./activity-utils";
+import { DeliveryStatus, isActivityComplete } from "./DeliveryStatus";
 
 interface ActivateActivityDialogProps {
     open: boolean;
@@ -49,6 +50,14 @@ function Picker({
     const canConfirm =
         selectedId !== null && selectedId !== currentId && !activating;
 
+    /* Pendientes primero, completas al final (el orden se conserva). */
+    const sorted = [...activities].sort(
+        (a, b) =>
+            Number(isActivityComplete(a)) - Number(isActivityComplete(b))
+    );
+
+    const pendingCount = sorted.filter((a) => !isActivityComplete(a)).length;
+
     return (
         <div className="space-y-5">
             <DialogHeader>
@@ -57,7 +66,11 @@ function Picker({
                 </DialogTitle>
 
                 <DialogDescription>
-                    Elige cuál será tu actividad en curso.
+                    {loading || activities.length === 0
+                        ? "Elige cuál será tu actividad en curso."
+                        : pendingCount === 0
+                            ? "Todas tus actividades ya fueron entregadas por todos."
+                            : `${pendingCount} ${pendingCount === 1 ? "actividad tiene" : "actividades tienen"} entregas pendientes.`}
                 </DialogDescription>
             </DialogHeader>
 
@@ -66,7 +79,7 @@ function Picker({
                     {Array.from({ length: 3 }).map((_, index) => (
                         <Skeleton
                             key={index}
-                            className="h-16 w-full rounded-2xl"
+                            className="h-20 w-full rounded-2xl"
                         />
                     ))}
                 </div>
@@ -78,19 +91,18 @@ function Picker({
                 <div
                     role="radiogroup"
                     aria-label="Actividades"
-                    className="max-h-72 space-y-2 overflow-y-auto pr-1"
+                    className="max-h-80 space-y-2 overflow-y-auto pr-1"
                 >
-                    {activities.map((activity) => {
+                    {sorted.map((activity) => {
                         const selected = selectedId === activity.id;
 
                         return (
                             <label
                                 key={activity.id}
-                                className={`flex cursor-pointer items-center gap-3 rounded-2xl border-2 p-3 transition-colors has-focus-visible:outline has-focus-visible:outline-offset-2 has-focus-visible:outline-[#187A4C] ${
-                                    selected
+                                className={`flex cursor-pointer items-center gap-3 rounded-2xl border-2 p-3 transition-colors has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-[#187A4C] ${selected
                                         ? "border-[#187A4C] bg-[#187A4C]/5"
                                         : "border-[#E3E8EF] hover:border-[#187A4C]/50"
-                                }`}
+                                    }`}
                             >
                                 <input
                                     type="radio"
@@ -103,11 +115,10 @@ function Picker({
 
                                 <span
                                     aria-hidden
-                                    className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 ${
-                                        selected
+                                    className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 ${selected
                                             ? "border-[#187A4C] bg-[#187A4C] text-white"
                                             : "border-[#C5CFDA]"
-                                    }`}
+                                        }`}
                                 >
                                     {selected && (
                                         <Check size={14} strokeWidth={3} />
@@ -115,21 +126,29 @@ function Picker({
                                 </span>
 
                                 <span className="min-w-0 flex-1">
-                                    <span className="block truncate font-semibold text-[#1F2A44]">
-                                        {activity.title}
+                                    <span className="flex flex-wrap items-center gap-2">
+                                        <span className="truncate font-semibold text-[#1F2A44]">
+                                            {activity.title}
+                                        </span>
+
+                                        {activity.active && (
+                                            <Badge className="bg-[#187A4C] text-white hover:bg-[#187A4C]">
+                                                Activa
+                                            </Badge>
+                                        )}
                                     </span>
 
                                     <span className="block text-sm text-[#5B6B80]">
                                         {activity.subjectName},{" "}
-                                        {formatActivityDate(activity.activityDate)}
+                                        {formatActivityDate(
+                                            activity.activityDate
+                                        )}
+                                    </span>
+
+                                    <span className="mt-1.5 block">
+                                        <DeliveryStatus activity={activity} />
                                     </span>
                                 </span>
-
-                                {activity.active && (
-                                    <Badge className="bg-[#187A4C] text-white hover:bg-[#187A4C]">
-                                        Activa
-                                    </Badge>
-                                )}
                             </label>
                         );
                     })}

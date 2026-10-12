@@ -7,6 +7,10 @@ export interface Activity {
     subjectName: string;
     active: boolean;
     createdAt: string;
+    /** Alumnos que ya entregaron esta actividad */
+    submissionsCount: number;
+    /** Alumnos que tiene el maestro en total */
+    totalStudents: number;
 }
 
 export interface ActivityPage {
