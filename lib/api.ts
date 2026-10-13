@@ -18,6 +18,9 @@ const AUTH_URLS = [
     "/api/auth/logout",
 ];
 
+/* Páginas públicas: ahí no hay nada que proteger. */
+const PUBLIC_PATHS = ["/login", "/register"];
+
 /*
  * Si varias peticiones fallan a la vez, todas esperan
  * la misma renovación en lugar de pedir una cada una.
@@ -34,6 +37,28 @@ function refreshSession(): Promise<void> {
 
     return refreshPromise;
 }
+
+/*
+ * La sesión ya no se puede renovar (venció, se cerró o se
+ * detectó reutilización): llevamos a la persona al login.
+ * Devuelve true si inició la redirección.
+ */
+function redirectToLogin(): boolean {
+    if (typeof window === "undefined") {
+        return false;
+    }
+
+    const path = window.location.pathname;
+
+    if (PUBLIC_PATHS.some((publicPath) => path.startsWith(publicPath))) {
+        return false;
+    }
+
+    window.location.replace("/login?expired=1");
+
+    return true;
+}
+
 
 api.interceptors.response.use(
     (response) => response,
@@ -56,13 +81,26 @@ api.interceptors.response.use(
             return api(original);
         } catch (refreshError) {
             /*
-             * El refreshToken también venció o no es válido.
-             * No redirigimos desde aquí: DashboardShell ya manda
-             * al login cuando getCurrentUser falla.
+             * Solo cerramos la sesión si el servidor rechazó la
+             * renovación. Un fallo de red no debe sacar a nadie.
              */
+            if (
+                axios.isAxiosError(refreshError) &&
+                refreshError.response?.status === 401 &&
+                redirectToLogin()
+            ) {
+                /*
+                 * Dejamos la petición pendiente a propósito: la
+                 * página se está yendo al login, y así ninguna
+                 * pantalla muestra un diálogo de error por un instante.
+                 */
+                return new Promise<never>(() => {});
+            }
+
             return Promise.reject(refreshError);
         }
     }
 );
+
 
 export default api;

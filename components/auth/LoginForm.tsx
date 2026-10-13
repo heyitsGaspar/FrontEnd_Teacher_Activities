@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import axios from "axios";
 import { Eye, EyeOff, Lock, Mail, Shapes, Star } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { login } from "../../app/services/auth/service";
 
@@ -25,6 +25,9 @@ import { Label } from "@/components/ui/label";
 
 export function LoginForm() {
     const router = useRouter();
+    // dentro del componente, junto a useRouter:
+    const searchParams = useSearchParams();
+    const sessionExpired = searchParams.get("expired") === "1";
 
     const [showPassword, setShowPassword] = useState(false);
 
@@ -178,6 +181,14 @@ export function LoginForm() {
                     <p className="mt-4 text-base leading-relaxed text-[#4A5568]">
                         Prepara, reparte y revisa las actividades de tu grupo.
                     </p>
+                    {sessionExpired && !formError && (
+                        <div
+                            role="status"
+                            className="mt-6 rounded-xl border border-[#7CC6E8]/60 bg-[#DCEEF7] px-4 py-3 text-sm font-medium text-[#1F2A44]"
+                        >
+                            Tu sesión expiró. Inicia sesión de nuevo para continuar.
+                        </div>
+                    )}
 
                     <form
                         onSubmit={handleSubmit}
