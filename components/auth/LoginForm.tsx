@@ -2,9 +2,17 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import axios from "axios";
 import { Eye, EyeOff, Lock, Mail, Shapes, Star } from "lucide-react";
-import { useRouter } from "next/navigation"
+import { useRouter } from "next/navigation";
+
 import { login } from "../../app/services/auth/service";
+
+import { getFieldErrors } from "@/lib/api-errors";
+import type { FieldErrors } from "@/lib/validation/register";
+import { validateLogin } from "@/lib/validation/login";
+
+import { FieldMessage, inputClass } from "@/components/auth/form-helpers";
 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,25 +24,67 @@ import { Label } from "@/components/ui/label";
  */
 
 export function LoginForm() {
-    const [showPassword, setShowPassword] = useState(false);
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("")
-
     const router = useRouter();
 
+    const [showPassword, setShowPassword] = useState(false);
+
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState("");
+
+    /*
+     * Errores por campo y error general.
+     */
+    const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+    const [formError, setFormError] = useState("");
+
+    /*
+     * Al escribir en un campo quitamos su error,
+     * y también el error general de credenciales.
+     */
+    const clearErrors = (field: string) => {
+        setFormError("");
+
+        setFieldErrors((previous) => {
+            if (!previous[field]) {
+                return previous;
+            }
+
+            const next = { ...previous };
+
+            delete next[field];
+
+            return next;
+        });
+    };
 
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
 
-        setError("");
-        setLoading(true);
-        try {
+        setFormError("");
 
+        /*
+         * 1) Validamos con Zod antes de llamar al backend.
+         * Si todo está bien, "data" trae el correo sin
+         * espacios sobrantes.
+         */
+        const { data, errors } = validateLogin({ email, password });
+
+        if (!data) {
+            setFieldErrors(errors);
+
+            return;
+        }
+
+        setFieldErrors({});
+
+        setLoading(true);
+
+        try {
             await login({
-                email,
-                password,
+                email: data.email,
+                password: data.password,
             });
 
             /*
@@ -45,20 +95,44 @@ export function LoginForm() {
              */
 
             router.push("/dashboard");
-
         } catch (error) {
+            /*
+             * 2) Errores por campo que mande el backend.
+             */
+            const backendErrors = getFieldErrors(error);
 
-            setError(
-                error instanceof Error
-                    ? error.message
-                    : "No se pudo iniciar sesión"
+            if (Object.keys(backendErrors).length > 0) {
+                setFieldErrors(backendErrors);
+
+                return;
+            }
+
+            /*
+             * 3) Credenciales incorrectas.
+             * El mensaje es el mismo si falla el correo o la
+             * contraseña, para no revelar qué cuentas existen.
+             */
+            if (
+                axios.isAxiosError(error) &&
+                error.response?.status === 401
+            ) {
+                setFormError("Correo o contraseña incorrectos.");
+
+                return;
+            }
+
+            /*
+             * 4) Cualquier otro caso (servidor caído, red, etc.).
+             */
+            console.error("Error iniciando sesión:", error);
+
+            setFormError(
+                "No se pudo iniciar sesión. Intenta de nuevo."
             );
-
         } finally {
-
             setLoading(false);
         }
-    }
+    };
 
     return (
         <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#DCEEF7] px-4 py-12 font-sans text-[#1F2A44]">
@@ -105,30 +179,52 @@ export function LoginForm() {
                         Prepara, reparte y revisa las actividades de tu grupo.
                     </p>
 
-                    <form onSubmit={handleSubmit} className="mt-8 space-y-5">
+                    <form
+                        onSubmit={handleSubmit}
+                        noValidate
+                        className="mt-8 space-y-5"
+                    >
+                        {/* Correo */}
                         <div className="space-y-2">
                             <Label htmlFor="email" className="text-sm font-semibold">
                                 Correo electrónico
                             </Label>
+
                             <div className="relative">
                                 <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#6B7A90]" />
+
                                 <Input
                                     id="email"
                                     type="email"
                                     autoComplete="email"
                                     placeholder="maestra@ejemplo.com"
                                     value={email}
-                                    onChange={(event) => setEmail(event.target.value)}
-                                    className="h-12 rounded-xl border-2 border-[#D5DEE8] pl-10 text-base focus-visible:border-[#187A4C] focus-visible:ring-[#187A4C]/20"
+                                    onChange={(event) => {
+                                        setEmail(event.target.value);
+                                        clearErrors("email");
+                                    }}
+                                    aria-invalid={Boolean(fieldErrors.email)}
+                                    aria-describedby="email-message"
+                                    className={inputClass(
+                                        Boolean(fieldErrors.email),
+                                        "pl-10"
+                                    )}
                                 />
                             </div>
+
+                            <FieldMessage
+                                id="email-message"
+                                error={fieldErrors.email}
+                            />
                         </div>
 
+                        {/* Contraseña */}
                         <div className="space-y-2">
                             <div className="flex items-center justify-between">
                                 <Label htmlFor="password" className="text-sm font-semibold">
                                     Contraseña
                                 </Label>
+
                                 <Link
                                     href="/forgot-password"
                                     className="text-sm font-medium text-[#187A4C] underline-offset-4 hover:underline"
@@ -136,24 +232,35 @@ export function LoginForm() {
                                     ¿La olvidaste?
                                 </Link>
                             </div>
+
                             <div className="relative">
                                 <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#6B7A90]" />
+
                                 <Input
                                     id="password"
                                     type={showPassword ? "text" : "password"}
                                     autoComplete="current-password"
                                     placeholder="••••••••"
                                     value={password}
-                                    onChange={(event) => setPassword(event.target.value)}
-                                    className="h-12 rounded-xl border-2 border-[#D5DEE8] pl-10 pr-11 text-base focus-visible:border-[#187A4C] focus-visible:ring-[#187A4C]/20"
+                                    onChange={(event) => {
+                                        setPassword(event.target.value);
+                                        clearErrors("password");
+                                    }}
+                                    aria-invalid={Boolean(fieldErrors.password)}
+                                    aria-describedby="password-message"
+                                    className={inputClass(
+                                        Boolean(fieldErrors.password),
+                                        "pl-10 pr-11"
+                                    )}
                                 />
+
                                 <button
                                     type="button"
                                     onClick={() => setShowPassword((v) => !v)}
                                     aria-label={
                                         showPassword ? "Ocultar contraseña" : "Mostrar contraseña"
                                     }
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 rounded p-1 text-[#6B7A90] hover:text-[#1F2A44] focus-visible:outline focus-visible:outline-[#187A4C]"
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 rounded p-1 text-[#6B7A90] hover:text-[#1F2A44] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#187A4C]"
                                 >
                                     {showPassword ? (
                                         <EyeOff className="h-4 w-4" />
@@ -162,19 +269,28 @@ export function LoginForm() {
                                     )}
                                 </button>
                             </div>
+
+                            <FieldMessage
+                                id="password-message"
+                                error={fieldErrors.password}
+                            />
                         </div>
 
-                        {error && (
-                            <p className="text-sm font-medium text-[#FF6B5B]">
-                                {error}
-                            </p>
+                        {/* Error general (credenciales, red, servidor) */}
+                        {formError && (
+                            <div
+                                role="alert"
+                                className="rounded-xl border border-[#FF6B5B]/40 bg-[#FF6B5B]/15 px-4 py-3 text-sm font-medium text-[#9A2A1E]"
+                            >
+                                {formError}
+                            </div>
                         )}
 
                         {/* Botón tipo "pegatina" con relieve */}
                         <button
                             type="submit"
-                            className="font-display h-12 w-full rounded-full bg-[#187A4C] text-lg font-semibold text-white shadow-[0_4px_0_#0F5233] transition-transform hover:bg-[#1B8855] focus-visible:outline focus-visible:outline-offset-2 focus-visible:outline-[#187A4C] active:translate-y-1 active:shadow-[0_0_0_#0F5233]"
                             disabled={loading}
+                            className="font-display h-12 w-full rounded-full bg-[#187A4C] text-lg font-semibold text-white shadow-[0_4px_0_#0F5233] transition-transform hover:bg-[#1B8855] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#187A4C] active:translate-y-1 active:shadow-[0_0_0_#0F5233] disabled:cursor-not-allowed disabled:opacity-60"
                         >
                             {loading ? "Iniciando sesión..." : "Iniciar sesión"}
                         </button>
@@ -184,7 +300,7 @@ export function LoginForm() {
                         ¿Aún no tienes cuenta?{" "}
                         <Link
                             href="/register"
-                            className="font-semibold text-[#FF6B5B] underline-offset-4 hover:underline"
+                            className="font-semibold text-[#C2392B] underline-offset-4 hover:underline"
                         >
                             Crear cuenta
                         </Link>
