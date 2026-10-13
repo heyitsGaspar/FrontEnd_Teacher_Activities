@@ -4,6 +4,8 @@ import { useState } from "react";
 
 import Link from "next/link";
 
+import axios from "axios";
+
 import {
     Eye,
     EyeOff,
@@ -17,9 +19,59 @@ import { useRouter } from "next/navigation";
 
 import { register } from "../../app/services/auth/service";
 
+import { getFieldErrors } from "@/lib/api-errors";
+
+import {
+    validateRegister,
+    type FieldErrors,
+} from "@/lib/validation/register";
+
 import { Input } from "@/components/ui/input";
 
 import { Label } from "@/components/ui/label";
+
+/*
+ * Mensaje debajo de cada campo: muestra el error
+ * o, si no hay, una pista opcional.
+ */
+function FieldMessage({
+    id,
+    error,
+    hint,
+}: {
+    id: string;
+    error?: string;
+    hint?: string;
+}) {
+    if (!error && !hint) {
+        return null;
+    }
+
+    return (
+        <p
+            id={id}
+            role={error ? "alert" : undefined}
+            className={`text-sm ${
+                error
+                    ? "font-medium text-[#C2392B]"
+                    : "text-[#5B6B80]"
+            }`}
+        >
+            {error ?? hint}
+        </p>
+    );
+}
+
+/*
+ * Clases del input: borde rojo si tiene error.
+ */
+function inputClass(hasError: boolean, extra = "") {
+    return `h-12 rounded-xl border-2 text-base ${extra} ${
+        hasError
+            ? "border-[#C2392B] focus-visible:border-[#C2392B] focus-visible:ring-[#C2392B]/20"
+            : "border-[#D5DEE8] focus-visible:border-[#187A4C] focus-visible:ring-[#187A4C]/20"
+    }`;
+}
 
 export function RegisterForm() {
 
@@ -53,10 +105,32 @@ export function RegisterForm() {
         useState(false);
 
     /*
-     * Mensaje de error.
+     * Errores por campo y error general.
      */
-    const [error, setError] =
+    const [fieldErrors, setFieldErrors] =
+        useState<FieldErrors>({});
+
+    const [formError, setFormError] =
         useState("");
+
+    /*
+     * Al escribir en un campo, quitamos su error.
+     */
+    const clearFieldError = (field: string) => {
+
+        setFieldErrors((previous) => {
+
+            if (!previous[field]) {
+                return previous;
+            }
+
+            const next = { ...previous };
+
+            delete next[field];
+
+            return next;
+        });
+    };
 
     const handleSubmit = async (
         event: React.FormEvent<HTMLFormElement>
@@ -64,20 +138,28 @@ export function RegisterForm() {
 
         event.preventDefault();
 
-        setError("");
+        setFormError("");
 
         /*
-         * Validamos que las contraseñas coincidan
-         * antes de llamar al backend.
+         * 1) Validamos con Zod antes de llamar al backend.
+         * Si todo está bien, "data" ya viene sin espacios
+         * sobrantes en nombre y correo.
          */
-        if (password !== confirmPassword) {
+        const { data, errors } = validateRegister({
+            name,
+            email,
+            password,
+            confirmPassword,
+        });
 
-            setError(
-                "Las contraseñas no coinciden"
-            );
+        if (!data) {
+
+            setFieldErrors(errors);
 
             return;
         }
+
+        setFieldErrors({});
 
         setLoading(true);
 
@@ -90,9 +172,9 @@ export function RegisterForm() {
              * confirmPassword NO se envía.
              */
             await register({
-                name,
-                email,
-                password,
+                name: data.name,
+                email: data.email,
+                password: data.password,
             });
 
             /*
@@ -108,10 +190,40 @@ export function RegisterForm() {
 
         } catch (error) {
 
-            setError(
-                error instanceof Error
-                    ? error.message
-                    : "No se pudo crear la cuenta"
+            /*
+             * 2) Errores por campo que mande el backend.
+             */
+            const backendErrors = getFieldErrors(error);
+
+            if (Object.keys(backendErrors).length > 0) {
+
+                setFieldErrors(backendErrors);
+
+                return;
+            }
+
+            /*
+             * 3) Correo ya registrado.
+             */
+            if (
+                axios.isAxiosError(error) &&
+                error.response?.status === 409
+            ) {
+
+                setFieldErrors({
+                    email: "Ya existe una cuenta con ese correo.",
+                });
+
+                return;
+            }
+
+            /*
+             * 4) Cualquier otro caso.
+             */
+            console.error("Error creando cuenta:", error);
+
+            setFormError(
+                "No se pudo crear la cuenta. Intenta de nuevo."
             );
 
         } finally {
@@ -189,7 +301,7 @@ export function RegisterForm() {
                                 Crear cuenta
                             </h1>
 
-                            <p className="mt-1 text-sm text-[#6B7A90]">
+                            <p className="mt-1 text-sm text-[#5B6B80]">
                                 Configura tu espacio de trabajo
                             </p>
 
@@ -199,6 +311,7 @@ export function RegisterForm() {
 
                     <form
                         onSubmit={handleSubmit}
+                        noValidate
                         className="mt-8 space-y-5"
                     >
 
@@ -225,13 +338,24 @@ export function RegisterForm() {
                                     autoComplete="name"
                                     placeholder="María García"
                                     value={name}
-                                    onChange={(event) =>
-                                        setName(event.target.value)
-                                    }
-                                    className="h-12 rounded-xl border-2 border-[#D5DEE8] pl-10 text-base focus-visible:border-[#187A4C] focus-visible:ring-[#187A4C]/20"
+                                    onChange={(event) => {
+                                        setName(event.target.value);
+                                        clearFieldError("name");
+                                    }}
+                                    aria-invalid={Boolean(fieldErrors.name)}
+                                    aria-describedby="name-message"
+                                    className={inputClass(
+                                        Boolean(fieldErrors.name),
+                                        "pl-10"
+                                    )}
                                 />
 
                             </div>
+
+                            <FieldMessage
+                                id="name-message"
+                                error={fieldErrors.name}
+                            />
 
                         </div>
 
@@ -258,13 +382,24 @@ export function RegisterForm() {
                                     autoComplete="email"
                                     placeholder="maestra@ejemplo.com"
                                     value={email}
-                                    onChange={(event) =>
-                                        setEmail(event.target.value)
-                                    }
-                                    className="h-12 rounded-xl border-2 border-[#D5DEE8] pl-10 text-base focus-visible:border-[#187A4C] focus-visible:ring-[#187A4C]/20"
+                                    onChange={(event) => {
+                                        setEmail(event.target.value);
+                                        clearFieldError("email");
+                                    }}
+                                    aria-invalid={Boolean(fieldErrors.email)}
+                                    aria-describedby="email-message"
+                                    className={inputClass(
+                                        Boolean(fieldErrors.email),
+                                        "pl-10"
+                                    )}
                                 />
 
                             </div>
+
+                            <FieldMessage
+                                id="email-message"
+                                error={fieldErrors.email}
+                            />
 
                         </div>
 
@@ -295,10 +430,16 @@ export function RegisterForm() {
                                     autoComplete="new-password"
                                     placeholder="••••••••"
                                     value={password}
-                                    onChange={(event) =>
-                                        setPassword(event.target.value)
-                                    }
-                                    className="h-12 rounded-xl border-2 border-[#D5DEE8] pl-10 pr-11 text-base focus-visible:border-[#187A4C] focus-visible:ring-[#187A4C]/20"
+                                    onChange={(event) => {
+                                        setPassword(event.target.value);
+                                        clearFieldError("password");
+                                    }}
+                                    aria-invalid={Boolean(fieldErrors.password)}
+                                    aria-describedby="password-message"
+                                    className={inputClass(
+                                        Boolean(fieldErrors.password),
+                                        "pl-10 pr-11"
+                                    )}
                                 />
 
                                 <button
@@ -313,7 +454,7 @@ export function RegisterForm() {
                                             ? "Ocultar contraseña"
                                             : "Mostrar contraseña"
                                     }
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 rounded p-1 text-[#6B7A90] hover:text-[#1F2A44]"
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 rounded p-1 text-[#6B7A90] hover:text-[#1F2A44] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#187A4C]"
                                 >
 
                                     {showPassword ? (
@@ -325,6 +466,12 @@ export function RegisterForm() {
                                 </button>
 
                             </div>
+
+                            <FieldMessage
+                                id="password-message"
+                                error={fieldErrors.password}
+                                hint="Mínimo 8 caracteres."
+                            />
 
                         </div>
 
@@ -355,12 +502,20 @@ export function RegisterForm() {
                                     autoComplete="new-password"
                                     placeholder="••••••••"
                                     value={confirmPassword}
-                                    onChange={(event) =>
+                                    onChange={(event) => {
                                         setConfirmPassword(
                                             event.target.value
-                                        )
-                                    }
-                                    className="h-12 rounded-xl border-2 border-[#D5DEE8] pl-10 pr-11 text-base focus-visible:border-[#187A4C] focus-visible:ring-[#187A4C]/20"
+                                        );
+                                        clearFieldError("confirmPassword");
+                                    }}
+                                    aria-invalid={Boolean(
+                                        fieldErrors.confirmPassword
+                                    )}
+                                    aria-describedby="confirm-message"
+                                    className={inputClass(
+                                        Boolean(fieldErrors.confirmPassword),
+                                        "pl-10 pr-11"
+                                    )}
                                 />
 
                                 <button
@@ -375,7 +530,7 @@ export function RegisterForm() {
                                             ? "Ocultar contraseña"
                                             : "Mostrar contraseña"
                                     }
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 rounded p-1 text-[#6B7A90] hover:text-[#1F2A44]"
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 rounded p-1 text-[#6B7A90] hover:text-[#1F2A44] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#187A4C]"
                                 >
 
                                     {showConfirmPassword ? (
@@ -388,14 +543,22 @@ export function RegisterForm() {
 
                             </div>
 
+                            <FieldMessage
+                                id="confirm-message"
+                                error={fieldErrors.confirmPassword}
+                            />
+
                         </div>
 
-                        {/* Error */}
+                        {/* Error general */}
 
-                        {error && (
-                            <p className="text-sm font-medium text-[#FF6B5B]">
-                                {error}
-                            </p>
+                        {formError && (
+                            <div
+                                role="alert"
+                                className="rounded-xl border border-[#FF6B5B]/40 bg-[#FF6B5B]/15 px-4 py-3 text-sm font-medium text-[#9A2A1E]"
+                            >
+                                {formError}
+                            </div>
                         )}
 
                         {/* Botón */}
@@ -403,7 +566,7 @@ export function RegisterForm() {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="font-display h-12 w-full rounded-full bg-[#187A4C] text-lg font-semibold text-white shadow-[0_4px_0_#0F5233] transition-transform hover:bg-[#1B8855] focus-visible:outline focus-visible:outline-offset-2 focus-visible:outline-[#187A4C] active:translate-y-1 active:shadow-[0_0_0_#0F5233] disabled:cursor-not-allowed disabled:opacity-60"
+                            className="font-display h-12 w-full rounded-full bg-[#187A4C] text-lg font-semibold text-white shadow-[0_4px_0_#0F5233] transition-transform hover:bg-[#1B8855] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#187A4C] active:translate-y-1 active:shadow-[0_0_0_#0F5233] disabled:cursor-not-allowed disabled:opacity-60"
                         >
                             {loading
                                 ? "Creando cuenta..."
@@ -420,7 +583,7 @@ export function RegisterForm() {
 
                         <Link
                             href="/login"
-                            className="font-semibold text-[#FF6B5B] underline-offset-4 hover:underline"
+                            className="font-semibold text-[#C2392B] underline-offset-4 hover:underline"
                         >
                             Iniciar sesión
                         </Link>
