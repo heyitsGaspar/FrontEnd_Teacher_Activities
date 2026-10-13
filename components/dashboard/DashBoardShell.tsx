@@ -10,7 +10,7 @@ import {
     SheetTitle,
 } from "@/components/ui/sheet";
 
-import { getCurrentUser } from "@/app/services/auth/service";
+import { getCurrentUser, logout } from "@/app/services/auth/service";
 
 import { DashboardHeader } from "./DashBoardHeader";
 import { DashboardNavContent } from "./DashBoardNavContent";
@@ -27,6 +27,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<CurrentUser | null>(null);
     const [loading, setLoading] = useState(true);
     const [menuOpen, setMenuOpen] = useState(false);
+    const [loggingOut, setLoggingOut] = useState(false);
 
     useEffect(() => {
         const loadUser = async () => {
@@ -43,6 +44,28 @@ export function DashboardShell({ children }: { children: ReactNode }) {
         loadUser();
     }, [router]);
 
+    const handleLogout = async () => {
+        if (loggingOut) {
+            return;
+        }
+
+        try {
+            setLoggingOut(true);
+
+            await logout();
+        } catch (error) {
+            /*
+             * Aunque falle la petición, mandamos al login:
+             * quien quiere salir no debe quedarse atascado.
+             */
+            console.error("Error cerrando sesión:", error);
+        } finally {
+            setMenuOpen(false);
+            router.replace("/login");
+            router.refresh();
+        }
+    };
+
     if (loading) {
         return (
             <main className="flex min-h-dvh items-center justify-center bg-[#DCEEF7]">
@@ -55,7 +78,10 @@ export function DashboardShell({ children }: { children: ReactNode }) {
 
     return (
         <div className="flex h-dvh overflow-hidden bg-[#DCEEF7] text-[#1F2A44]">
-            <DashboardSidebar />
+            <DashboardSidebar
+                onLogout={handleLogout}
+                loggingOut={loggingOut}
+            />
 
             <div className="flex min-w-0 flex-1 flex-col">
                 <DashboardHeader
@@ -74,7 +100,11 @@ export function DashboardShell({ children }: { children: ReactNode }) {
                         Navegación principal
                     </SheetDescription>
 
-                    <DashboardNavContent onNavigate={() => setMenuOpen(false)} />
+                    <DashboardNavContent
+                        onNavigate={() => setMenuOpen(false)}
+                        onLogout={handleLogout}
+                        loggingOut={loggingOut}
+                    />
                 </SheetContent>
             </Sheet>
         </div>

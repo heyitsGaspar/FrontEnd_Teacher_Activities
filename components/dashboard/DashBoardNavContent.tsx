@@ -9,11 +9,13 @@ import { isRouteActive, menuItems } from "./MenuItems";
 interface DashboardNavContentProps {
     onNavigate?: () => void;
     onLogout?: () => void;
+    loggingOut?: boolean;
 }
 
 export function DashboardNavContent({
     onNavigate,
     onLogout,
+    loggingOut = false,
 }: DashboardNavContentProps) {
     const pathname = usePathname();
 
@@ -57,11 +59,10 @@ export function DashboardNavContent({
                                 href={href}
                                 onClick={onNavigate}
                                 aria-current={active ? "page" : undefined}
-                                className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#187A4C] ${
-                                    active
-                                        ? "bg-[#187A4C] text-white shadow-[0_3px_0_#0F5233]"
-                                        : "text-[#4A5568] hover:bg-[#DCEEF7] hover:text-[#187A4C]"
-                                }`}
+                                className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#187A4C] ${active
+                                    ? "bg-[#187A4C] text-white shadow-[0_3px_0_#0F5233]"
+                                    : "text-[#4A5568] hover:bg-[#DCEEF7] hover:text-[#187A4C]"
+                                    }`}
                             >
                                 <Icon size={20} strokeWidth={2} />
                                 <span>{label}</span>
@@ -76,10 +77,11 @@ export function DashboardNavContent({
                 <button
                     type="button"
                     onClick={onLogout}
-                    className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold text-[#C2392B] transition-colors hover:bg-[#FFF1EF] focus-visible:outline focus-visible:outline-offset-2 focus-visible:outline-[#FF6B5B]"
+                    disabled={loggingOut}
+                    className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold text-[#C2392B] transition-colors hover:bg-[#FFF1EF] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FF6B5B] disabled:cursor-not-allowed disabled:opacity-60"
                 >
                     <LogOut size={20} strokeWidth={2} />
-                    <span>Cerrar sesión</span>
+                    <span>{loggingOut ? "Cerrando sesión..." : "Cerrar sesión"}</span>
                 </button>
             </div>
         </div>
