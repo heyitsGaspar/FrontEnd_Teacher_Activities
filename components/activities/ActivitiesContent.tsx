@@ -31,6 +31,7 @@ import { getSubjects } from "@/app/services/subjects/service";
 
 import type { Activity } from "@/types/activities";
 import type { Subject } from "@/types/subjects";
+import axios from "axios";
 
 const PAGE_SIZE = 10;
 const PICKER_SIZE = 50;
@@ -263,15 +264,26 @@ export function ActivitiesContent() {
                 "La actividad se eliminó correctamente."
             );
         } catch (error) {
-            console.error("Error eliminando actividad:", error);
+        
 
+        // Cierra la confirmación para que no se encime con el aviso
+        setConfirmDeleteOpen(false);
+
+        if (axios.isAxiosError(error) && error.response?.status === 409) {
+            showError(
+                "No se puede eliminar la actividad",
+                error.response.data?.message ??
+                    "La actividad ya tiene entregas registradas."
+            );
+        } else {
             showError(
                 "No se pudo eliminar la actividad",
                 "Ocurrió un error al eliminar la actividad."
             );
-        } finally {
-            setDeleting(false);
         }
+    } finally {
+        setDeleting(false);
+    }
     };
 
     /* ---------- Activar ---------- */
