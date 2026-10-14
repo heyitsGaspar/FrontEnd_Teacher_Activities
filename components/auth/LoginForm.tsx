@@ -98,35 +98,41 @@ export function LoginForm() {
              */
 
             router.push("/dashboard");
-        } catch (error) {
-            /*
-             * 2) Errores por campo que mande el backend.
-             */
-            const backendErrors = getFieldErrors(error);
+        } catch (error: unknown) {
+            // 1. Demasiados intentos de inicio de sesión (HTTP 429).
+            if (
+                axios.isAxiosError(error) &&
+                error.response?.status === 429
+            ) {
+                const message = error.response.data?.message;
 
-            if (Object.keys(backendErrors).length > 0) {
-                setFieldErrors(backendErrors);
+                setFormError(
+                    typeof message === "string"
+                        ? message
+                        : "Demasiados intentos. Espera unos minutos e inténtalo de nuevo."
+                );
 
                 return;
             }
 
-            /*
-             * 3) Credenciales incorrectas.
-             * El mensaje es el mismo si falla el correo o la
-             * contraseña, para no revelar qué cuentas existen.
-             */
+            // 2. Errores de validación enviados por el backend.
+            const backendErrors = getFieldErrors(error);
+
+            if (Object.keys(backendErrors).length > 0) {
+                setFieldErrors(backendErrors);
+                return;
+            }
+
+            // 3. Credenciales incorrectas (HTTP 401).
             if (
                 axios.isAxiosError(error) &&
                 error.response?.status === 401
             ) {
                 setFormError("Correo o contraseña incorrectos.");
-
                 return;
             }
 
-            /*
-             * 4) Cualquier otro caso (servidor caído, red, etc.).
-             */
+            // 4. Otros errores.
             console.error("Error iniciando sesión:", error);
 
             setFormError(
@@ -135,6 +141,7 @@ export function LoginForm() {
         } finally {
             setLoading(false);
         }
+
     };
 
     return (
