@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, KeyRound, LoaderCircle } from 'lucide-react'
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8080'
+const API_URL = process.env.NEXT_PUBLIC_API_URL
 
 function ResetPasswordForm() {
     const searchParams = useSearchParams()
