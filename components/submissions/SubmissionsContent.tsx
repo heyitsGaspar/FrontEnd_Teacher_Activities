@@ -13,6 +13,7 @@ import { AppConfirmDialog } from "@/components/shared/AppConfirmDialog";
 import { playTone } from "./scan-feedback";
 import { ScanPanel, type ScanResult } from "./ScanPanel";
 import { SubmissionBoard } from "./SubmissionBoard";
+import { SubmissionsExportButtons } from "./SubmissionsExportButtons";
 
 import {
     createSubmission,
@@ -273,22 +274,37 @@ export function SubmissionsContent() {
         <>
             <div className="space-y-6 p-6 lg:p-8">
                 {/* Encabezado */}
-                <section className="flex items-center gap-3">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#FFD84D]">
-                        <ClipboardCheck size={22} className="text-[#1F2A44]" />
-                    </div>
+<section className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+    <div className="flex items-center gap-3">
+        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#FFD84D]">
+            <ClipboardCheck size={22} className="text-[#1F2A44]" />
+        </div>
 
-                    <div>
-                        <h1 className="font-display text-2xl font-bold text-[#1F2A44]">
-                            Entregas
-                        </h1>
+        <div>
+            <h1 className="font-display text-2xl font-bold text-[#1F2A44]">
+                Entregas
+            </h1>
 
-                        <p className="text-sm text-[#6B7A90]">
-                            Escanea el QR de cada alumno para registrar su
-                            entrega.
-                        </p>
-                    </div>
-                </section>
+            <p className="text-sm text-[#6B7A90]">
+                Escanea el QR de cada alumno para registrar su entrega.
+            </p>
+        </div>
+    </div>
+
+    <SubmissionsExportButtons
+        activities={activities}
+        students={students}
+        disabled={loading}
+        onError={(message) =>
+            setDialog({
+                open: true,
+                type: "error",
+                title: "No se pudo generar el reporte",
+                description: message,
+            })
+        }
+    />
+</section>
 
                 {/* Escáner */}
                 <ScanPanel

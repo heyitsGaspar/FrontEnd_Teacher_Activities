@@ -133,11 +133,16 @@ export function LoginForm() {
             }
 
             // 4. Otros errores.
-            console.error("Error iniciando sesión:", error);
+            // 4. Otros errores.
+            const status = axios.isAxiosError(error) ? error.response?.status : undefined;
 
             setFormError(
-                "No se pudo iniciar sesión. Intenta de nuevo."
+                status === 500 || status === 502 || status === 503 || status === 504
+                    ? "El servidor está despertando. Espera unos segundos e inténtalo de nuevo."
+                    : "No se pudo iniciar sesión. Intenta de nuevo."
             );
+
+
         } finally {
             setLoading(false);
         }
