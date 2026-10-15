@@ -123,8 +123,8 @@ export function SubmissionBoard({
                                     }
                                     scope="col"
                                     className={`sticky top-0 z-20 border-b border-r border-[#D5DEE8] p-0 text-left align-top hover:z-35 focus-within:z-35 ${activity.active
-                                            ? "bg-[#187A4C] text-white"
-                                            : "bg-[#F7FAFC] text-[#1F2A44]"
+                                        ? "bg-[#187A4C] text-white"
+                                        : "bg-[#F7FAFC] text-[#1F2A44]"
                                         }`}
                                 >
                                     <div
@@ -187,8 +187,8 @@ export function SubmissionBoard({
                                 <th
                                     scope="row"
                                     className={`sticky left-0 z-10 w-40 border-b border-r border-[#E3E8EF] px-4 py-3 text-left text-sm font-medium text-[#1F2A44] transition-colors sm:w-56 ${highlighted
-                                            ? "bg-[#FFF3BF]"
-                                            : "bg-white"
+                                        ? "bg-[#FFF3BF]"
+                                        : "bg-white"
                                         }`}
                                 >
                                     <span className="block truncate">
@@ -204,10 +204,10 @@ export function SubmissionBoard({
                                         <td
                                             key={activity.id}
                                             className={`border-b border-r border-[#E3E8EF] p-2 text-center transition-colors ${highlighted
-                                                    ? "bg-[#FFF3BF]"
-                                                    : activity.active
-                                                        ? "bg-[#187A4C]/5"
-                                                        : "bg-white"
+                                                ? "bg-[#FFF3BF]"
+                                                : activity.active
+                                                    ? "bg-[#187A4C]/5"
+                                                    : "bg-white"
                                                 }`}
                                         >
                                             {submission ? (
@@ -224,13 +224,8 @@ export function SubmissionBoard({
                                                     aria-label={`Quitar la entrega de ${student.name} en ${activity.title}`}
                                                     className="inline-flex items-center gap-1.5 rounded-full bg-[#187A4C]/15 px-3 py-1.5 text-xs font-semibold text-[#0F5233] transition-shadow hover:ring-2 hover:ring-[#187A4C]/40 focus-visible:outline focus-visible:outline-offset-2 focus-visible:outline-[#187A4C]"
                                                 >
-                                                    <Check
-                                                        size={14}
-                                                        strokeWidth={3}
-                                                    />
-                                                    {formatTime(
-                                                        submission.createdAt
-                                                    )}
+                                                    <Check size={14} strokeWidth={3} />
+                                                    Entregó
                                                 </button>
                                             ) : (
                                                 <span className="inline-flex items-center gap-1.5 rounded-full bg-[#FF6B5B]/15 px-3 py-1.5 text-xs font-semibold text-[#9A2A1E]">
