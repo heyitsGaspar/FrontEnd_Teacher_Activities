@@ -87,3 +87,18 @@ export async function getAllChildren(): Promise<Child[]> {
 
     return children;
 }
+
+/**
+ * Actualiza el nombre de un alumno.
+ */
+export async function updateChild(
+    id: string,
+    name: string
+): Promise<Child> {
+    const response = await api.put<Child>(
+        `/api/children/${id}`,
+        { name }
+    );
+
+    return response.data;
+}

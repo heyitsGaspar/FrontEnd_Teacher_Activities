@@ -3,6 +3,7 @@
 import {
     Download,
     Trash2,
+    Pencil,
 } from "lucide-react";
 
 import {
@@ -25,6 +26,7 @@ interface StudentTableProps {
 
     loading?: boolean;
 
+    onEdit: (child: Child) => void;
     onDelete: (child: Child) => void;
 
     onGenerateQr: (child: Child) => void;
@@ -33,6 +35,7 @@ interface StudentTableProps {
 export function StudentTable({
     children,
     loading = false,
+    onEdit,
     onDelete,
     onGenerateQr,
 }: StudentTableProps) {
@@ -104,6 +107,19 @@ export function StudentTable({
 
                                     <span className="hidden sm:inline">
                                         QR
+                                    </span>
+                                </Button>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => onEdit(child)}
+                                    className="text-[#1F2A44] hover:bg-[#F1F5F9]"
+                                >
+                                    <Pencil size={18} />
+
+                                    <span className="sr-only">
+                                        Editar alumno
                                     </span>
                                 </Button>
 

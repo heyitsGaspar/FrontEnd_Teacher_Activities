@@ -14,11 +14,13 @@ import { AddStudentDialog } from "./AddStudentDialog";
 import { StudentTable } from "./StudentTable";
 import { StudentPagination } from "./StudentPagination";
 import { StudentQrPdfButton } from "./StudentQrPdfButton";
+import { EditStudentDialog } from "./EditStudentDialog";
 
 import {
     createChild,
     deleteChild,
     getChildren,
+    updateChild
 } from "@/app/services/children/service";
 
 import type { Child } from "@/types/child";
@@ -56,6 +58,12 @@ export function StudentsContent() {
     const [deleting, setDeleting] =
         useState(false);
 
+
+    const [updating, setUpdating] =
+        useState(false);
+
+    const [editDialogOpen, setEditDialogOpen] =
+        useState(false);
     const [addDialogOpen, setAddDialogOpen] =
         useState(false);
 
@@ -146,10 +154,7 @@ export function StudentsContent() {
                     `Se registró a ${created.name} correctamente. Su código es ${created.code}.`,
             });
         } catch (error) {
-            console.error(
-                "Error creando alumno:",
-                error
-            );
+
 
             if (
                 axios.isAxiosError(error) &&
@@ -175,6 +180,73 @@ export function StudentsContent() {
             });
         } finally {
             setSaving(false);
+        }
+    };
+
+    const handleEditClick = (
+        child: Child
+    ) => {
+        setSelectedChild(child);
+        setEditDialogOpen(true);
+    };
+
+    const handleUpdateStudent = async (
+        name: string
+    ) => {
+        if (!selectedChild) {
+            return;
+        }
+
+        try {
+            setUpdating(true);
+
+            const updated =
+                await updateChild(
+                    selectedChild.id,
+                    name
+                );
+
+            setEditDialogOpen(false);
+            setSelectedChild(null);
+
+            await loadChildren(
+                currentPage
+            );
+
+            setDialog({
+                open: true,
+                type: "success",
+                title: "Alumno actualizado",
+                description:
+                    `El nombre ahora es ${updated.name}.`,
+            });
+        } catch (error) {
+
+
+            if (
+                axios.isAxiosError(error) &&
+                error.response?.status === 409
+            ) {
+                setDialog({
+                    open: true,
+                    type: "warning",
+                    title: "Este alumno ya existe",
+                    description:
+                        "Ya tienes otro alumno registrado con ese nombre.",
+                });
+
+                return;
+            }
+
+            setDialog({
+                open: true,
+                type: "error",
+                title: "No se pudo actualizar el alumno",
+                description:
+                    "Ocurrió un error al actualizar al alumno. Intenta nuevamente.",
+            });
+        } finally {
+            setUpdating(false);
         }
     };
 
@@ -374,6 +446,7 @@ export function StudentsContent() {
                             onDelete={
                                 handleDeleteClick
                             }
+                            onEdit={handleEditClick}
                             onGenerateQr={
                                 handleGenerateQr
                             }
@@ -409,6 +482,21 @@ export function StudentsContent() {
                     handleCreateStudent
                 }
                 loading={saving}
+            />
+
+            {/* Editar alumno */}
+            <EditStudentDialog
+                open={editDialogOpen}
+                onOpenChange={(open) => {
+                    setEditDialogOpen(open);
+
+                    if (!open) {
+                        setSelectedChild(null);
+                    }
+                }}
+                currentName={selectedChild?.name ?? ""}
+                onSubmit={handleUpdateStudent}
+                loading={updating}
             />
 
             {/* Confirmación de eliminación */}
