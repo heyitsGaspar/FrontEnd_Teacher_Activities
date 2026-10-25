@@ -41,8 +41,19 @@ type UndoTarget = {
     activity: BoardActivity;
     submission: BoardSubmission;
 };
+type MarkTarget = {
+    student: BoardStudent;
+    activity: BoardActivity;
+};
+
+
+
 
 export function SubmissionsContent() {
+
+    const [markTarget, setMarkTarget] = useState<MarkTarget | null>(null);
+    const [markConfirmOpen, setMarkConfirmOpen] = useState(false);
+    const [marking, setMarking] = useState(false);
     const [board, setBoard] = useState<SubmissionBoardData | null>(null);
     const [loading, setLoading] = useState(true);
 
@@ -119,6 +130,53 @@ export function SubmissionsContent() {
         );
     };
 
+    const handleMarkClick = (student: BoardStudent, activity: BoardActivity) => {
+        setMarkTarget({ student, activity });
+        setMarkConfirmOpen(true);
+    };
+
+    const handleMarkConfirm = async () => {
+        if (!markTarget) {
+            return;
+        }
+
+        const { student, activity } = markTarget;
+
+        try {
+            setMarking(true);
+
+            const created = await createSubmission(student.code, activity.id);
+
+            applySubmission(created);
+            highlight(created.childId);
+            playTone("success");
+
+            setScanResult({
+                kind: "success",
+                title: created.childName,
+                text: `entregó «${created.activityTitle}».`,
+            });
+        } catch (error) {
+            playTone("error");
+
+            const status = axios.isAxiosError(error)
+                ? error.response?.status
+                : undefined;
+
+            setScanResult({
+                kind: status === 409 ? "duplicate" : "error",
+                title: status === 409 ? student.name : "No se pudo registrar.",
+                text:
+                    status === 409
+                        ? "ya había entregado esta actividad."
+                        : "Ocurrió un error. Intenta de nuevo.",
+            });
+        } finally {
+            setMarking(false);
+            setMarkConfirmOpen(false);
+            setMarkTarget(null);
+        }
+    };
     /* Marca la celda sin volver a pedir toda la tabla. */
     const applySubmission = (created: Submission) => {
         setBoard((previous) =>
@@ -274,37 +332,37 @@ export function SubmissionsContent() {
         <>
             <div className="space-y-6 p-6 lg:p-8">
                 {/* Encabezado */}
-<section className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-    <div className="flex items-center gap-3">
-        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#FFD84D]">
-            <ClipboardCheck size={22} className="text-[#1F2A44]" />
-        </div>
+                <section className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                    <div className="flex items-center gap-3">
+                        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#FFD84D]">
+                            <ClipboardCheck size={22} className="text-[#1F2A44]" />
+                        </div>
 
-        <div>
-            <h1 className="font-display text-2xl font-bold text-[#1F2A44]">
-                Entregas
-            </h1>
+                        <div>
+                            <h1 className="font-display text-2xl font-bold text-[#1F2A44]">
+                                Entregas
+                            </h1>
 
-            <p className="text-sm text-[#6B7A90]">
-                Escanea el QR de cada alumno para registrar su entrega.
-            </p>
-        </div>
-    </div>
+                            <p className="text-sm text-[#6B7A90]">
+                                Escanea el QR de cada alumno para registrar su entrega.
+                            </p>
+                        </div>
+                    </div>
 
-    <SubmissionsExportButtons
-        activities={activities}
-        students={students}
-        disabled={loading}
-        onError={(message) =>
-            setDialog({
-                open: true,
-                type: "error",
-                title: "No se pudo generar el reporte",
-                description: message,
-            })
-        }
-    />
-</section>
+                    <SubmissionsExportButtons
+                        activities={activities}
+                        students={students}
+                        disabled={loading}
+                        onError={(message) =>
+                            setDialog({
+                                open: true,
+                                type: "error",
+                                title: "No se pudo generar el reporte",
+                                description: message,
+                            })
+                        }
+                    />
+                </section>
 
                 {/* Escáner */}
                 <ScanPanel
@@ -357,6 +415,7 @@ export function SubmissionsContent() {
                                 students={students}
                                 highlightedId={highlightedId}
                                 onUndo={handleUndoClick}
+                                onMark={handleMarkClick}
                             />
                         )}
                     </CardContent>
@@ -388,6 +447,23 @@ export function SubmissionsContent() {
                 type={dialog.type}
                 title={dialog.title}
                 description={dialog.description}
+            />
+            {/* Confirmar marcar entrega */}
+            <AppConfirmDialog
+                open={markConfirmOpen}
+                onOpenChange={setMarkConfirmOpen}
+                title="¿Marcar como entregada?"
+                description={
+                    markTarget
+                        ? `¿Registrar que ${markTarget.student.name} entregó «${markTarget.activity.title}»?`
+                        : "Se registrará la entrega."
+                }
+                confirmText="Marcar entrega"
+                cancelText="Cancelar"
+                loadingText="Registrando..."
+                variant="success"
+                onConfirm={handleMarkConfirm}
+                loading={marking}
             />
         </>
     );

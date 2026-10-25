@@ -20,11 +20,18 @@ interface AppConfirmDialogProps {
 
     confirmText?: string;
     cancelText?: string;
+    loadingText?: string;
+    variant?: "danger" | "success";
 
     onConfirm: () => void;
 
     loading?: boolean;
 }
+
+const VARIANT_CLASSES = {
+    danger: "bg-[#C2392B] text-white hover:bg-[#A92F23]",
+    success: "bg-[#187A4C] text-white hover:bg-[#1B8855]",
+};
 
 export function AppConfirmDialog({
     open,
@@ -33,6 +40,8 @@ export function AppConfirmDialog({
     description,
     confirmText = "Confirmar",
     cancelText = "Cancelar",
+    loadingText = "Eliminando...",
+    variant = "danger",
     onConfirm,
     loading = false,
 }: AppConfirmDialogProps) {
@@ -60,9 +69,9 @@ export function AppConfirmDialog({
                             event.preventDefault();
                             onConfirm();
                         }}
-                        className="bg-[#C2392B] text-white hover:bg-[#A92F23]"
+                        className={VARIANT_CLASSES[variant]}
                     >
-                        {loading ? "Eliminando..." : confirmText}
+                        {loading ? loadingText : confirmText}
                     </AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import axios from "axios";
 import { Eye, EyeOff, Lock, Mail, Shapes, Star } from "lucide-react";
@@ -28,6 +28,27 @@ export function LoginForm() {
     // dentro del componente, junto a useRouter:
     const searchParams = useSearchParams();
     const sessionExpired = searchParams.get("expired") === "1";
+
+    useEffect(() => {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+        const wakeUrl = apiUrl
+            ? new URL("/api/auth/me", apiUrl).toString()
+            : "/api/auth/me";
+
+        void fetch(wakeUrl, {
+            method: "GET",
+            credentials: "include",
+            cache: "no-store",
+        }).then((response) => {
+            if (response.status >= 500) {
+                console.warn(
+                    `No se pudo preparar el servidor de la API (HTTP ${response.status}).`
+                );
+            }
+        }).catch((error: unknown) => {
+            console.warn("No se pudo conectar con la API para prepararla.", error);
+        });
+    }, []);
 
     const [showPassword, setShowPassword] = useState(false);
 

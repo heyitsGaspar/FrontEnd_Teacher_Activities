@@ -21,6 +21,7 @@ interface SubmissionBoardProps {
         activity: BoardActivity,
         submission: BoardSubmission
     ) => void;
+    onMark: (student: BoardStudent, activity: BoardActivity) => void;
 }
 
 function formatTime(iso: string) {
@@ -28,6 +29,7 @@ function formatTime(iso: string) {
         hour: "2-digit",
         minute: "2-digit",
     });
+
 }
 
 export function SubmissionBoard({
@@ -35,6 +37,7 @@ export function SubmissionBoard({
     students,
     highlightedId,
     onUndo,
+    onMark,
 }: SubmissionBoardProps) {
     const activeHeaderRef = useRef<HTMLTableCellElement>(null);
 
@@ -228,10 +231,19 @@ export function SubmissionBoard({
                                                     Entregó
                                                 </button>
                                             ) : (
-                                                <span className="inline-flex items-center gap-1.5 rounded-full bg-[#FF6B5B]/15 px-3 py-1.5 text-xs font-semibold text-[#9A2A1E]">
+                                                <button
+
+                                                    type="button"
+                                                    onClick={() => onMark(student, activity)}
+                                                    title="Clic para marcar como entregada"
+                                                    aria-label={`Marcar la entrega de ${student.name} en ${activity.title}`}
+                                                    className="inline-flex items-center gap-1.5 rounded-full bg-[#FF6B5B]/15 px-3 py-1.5 text-xs font-semibold text-[#9A2A1E] transition-shadow hover:ring-2 hover:ring-[#FF6B5B]/40 focus-visible:outline focus-visible:outline-offset-2 focus-visible:outline-[#FF6B5B]"
+                                                >
                                                     <Clock size={14} />
                                                     Pendiente
-                                                </span>
+                                                </button>
+
+
                                             )}
                                         </td>
                                     );
