@@ -10,6 +10,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { AppDialog } from "@/components/shared/AppDialog";
 import { AppConfirmDialog } from "@/components/shared/AppConfirmDialog";
 
+import { PALETTE } from "./report-palette";
+import { isActivityInTrimester, TRIMESTERS } from "./trimester-utils";
 import { playTone } from "./scan-feedback";
 import { ScanPanel, type ScanResult } from "./ScanPanel";
 import { SubmissionBoard } from "./SubmissionBoard";
@@ -56,6 +58,8 @@ export function SubmissionsContent() {
     const [marking, setMarking] = useState(false);
     const [board, setBoard] = useState<SubmissionBoardData | null>(null);
     const [loading, setLoading] = useState(true);
+    const [trimesterFilter, setTrimesterFilter] = useState<number | "all">("all");
+    const [subjectFilter, setSubjectFilter] = useState("");
 
     const [scanResult, setScanResult] = useState<ScanResult | null>(null);
     const [highlightedId, setHighlightedId] = useState<string | null>(null);
@@ -76,6 +80,38 @@ export function SubmissionsContent() {
 
     const students = board?.students ?? [];
     const activities = board?.activities ?? [];
+    const trimesterActivities =
+        trimesterFilter === "all"
+            ? activities
+            : activities.filter((activity) =>
+                isActivityInTrimester(activity, trimesterFilter)
+            );
+    const subjectOptions = Array.from(
+        new Set(
+            trimesterActivities.map(
+                (activity) => activity.subjectName?.trim() || "Sin materia"
+            )
+        )
+    ).sort((first, second) => first.localeCompare(second, "es"));
+    const visibleActivities = subjectFilter
+        ? trimesterActivities.filter(
+            (activity) =>
+                (activity.subjectName?.trim() || "Sin materia") === subjectFilter
+        )
+        : trimesterActivities;
+    const selectedTrimesterLabel =
+        trimesterFilter === "all"
+            ? ""
+            : TRIMESTERS.find((trimester) => trimester.id === trimesterFilter)?.label ??
+              "este trimestre";
+    const emptyActivitiesMessage =
+        trimesterActivities.length === 0
+            ? trimesterFilter === "all"
+                ? "Crea una actividad para empezar a registrar entregas."
+                : `No hay actividades para ${selectedTrimesterLabel}.`
+            : subjectFilter
+                ? `No hay actividades para la materia «${subjectFilter}».`
+                : "No hay actividades para esta selección.";
     const activeActivity = activities.find((a) => a.active) ?? null;
 
     const deliveredCount = activeActivity
@@ -382,16 +418,88 @@ export function SubmissionsContent() {
                             Registro de entregas
                         </CardTitle>
 
-                        <div className="flex items-center gap-2 text-xs font-semibold">
-                            <span className="inline-flex items-center gap-1.5 rounded-full bg-[#187A4C]/15 px-3 py-1.5 text-[#0F5233]">
-                                <Check size={14} strokeWidth={3} />
-                                Entregó
-                            </span>
+                        <div className="flex flex-wrap items-center justify-end gap-3">
+                            <div className="flex items-center gap-2">
+                                <label
+                                    htmlFor="submission-trimester-filter"
+                                    className="text-sm font-medium text-[#1F2A44]"
+                                >
+                                    Ver:
+                                </label>
+                                <select
+                                    id="submission-trimester-filter"
+                                    value={trimesterFilter}
+                                    onChange={(event) => {
+                                        setTrimesterFilter(
+                                            event.target.value === "all"
+                                                ? "all"
+                                                : Number(event.target.value)
+                                        );
+                                        setSubjectFilter("");
+                                    }}
+                                    disabled={loading}
+                                    className="h-9 rounded-md border border-[#D5DEE8] bg-white px-3 text-sm font-medium text-[#1F2A44] outline-none focus-visible:ring-2 focus-visible:ring-[#187A4C]"
+                                >
+                                    <option value="all">Todas</option>
+                                    {TRIMESTERS.map((trimester) => (
+                                        <option key={trimester.id} value={trimester.id}>
+                                            {trimester.label}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
 
-                            <span className="inline-flex items-center gap-1.5 rounded-full bg-[#FF6B5B]/15 px-3 py-1.5 text-[#9A2A1E]">
-                                <Clock size={14} />
-                                Pendiente
-                            </span>
+                            <div className="flex items-center gap-2">
+                                <label
+                                    htmlFor="submission-subject-filter"
+                                    className="text-sm font-medium text-[#1F2A44]"
+                                >
+                                    Materia:
+                                </label>
+                                <select
+                                    id="submission-subject-filter"
+                                    value={subjectFilter}
+                                    onChange={(event) => setSubjectFilter(event.target.value)}
+                                    disabled={loading || subjectOptions.length === 0}
+                                    className="h-9 max-w-52 rounded-md border border-[#D5DEE8] bg-white px-3 text-sm font-medium text-[#1F2A44] outline-none focus-visible:ring-2 focus-visible:ring-[#187A4C] disabled:cursor-not-allowed disabled:opacity-60"
+                                >
+                                    <option value="">Todas las materias</option>
+                                    {subjectOptions.map((subject) => (
+                                        <option key={subject} value={subject}>
+                                            {subject}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div className="flex flex-wrap items-center gap-2 text-xs font-semibold">
+                                <span
+                                    className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5"
+                                    style={{
+                                        backgroundColor: `#${PALETTE.greenSoft}`,
+                                        color: `#${PALETTE.greenText}`,
+                                    }}
+                                >
+                                    <Check size={14} strokeWidth={3} />
+                                    Entregó a tiempo
+                                </span>
+
+                                <span
+                                    className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5"
+                                    style={{
+                                        backgroundColor: `#${PALETTE.orangeSoft}`,
+                                        color: `#${PALETTE.orangeText}`,
+                                    }}
+                                >
+                                    <Check size={14} strokeWidth={3} />
+                                    Entregó a destiempo
+                                </span>
+
+                                <span className="inline-flex items-center gap-1.5 rounded-full bg-[#FF6B5B]/15 px-3 py-1.5 text-[#9A2A1E]">
+                                    <Clock size={14} />
+                                    Pendiente
+                                </span>
+                            </div>
                         </div>
                     </CardHeader>
 
@@ -411,9 +519,10 @@ export function SubmissionsContent() {
                             </div>
                         ) : (
                             <SubmissionBoard
-                                activities={activities}
+                                activities={visibleActivities}
                                 students={students}
                                 highlightedId={highlightedId}
+                                emptyActivitiesMessage={emptyActivitiesMessage}
                                 onUndo={handleUndoClick}
                                 onMark={handleMarkClick}
                             />

@@ -6,6 +6,8 @@ import Link from "next/link";
 
 import { formatActivityDate } from "@/components/activities/activity-utils";
 
+import { PALETTE } from "./report-palette";
+
 import type {
     BoardActivity,
     BoardStudent,
@@ -16,6 +18,7 @@ interface SubmissionBoardProps {
     activities: BoardActivity[];
     students: BoardStudent[];
     highlightedId: string | null;
+    emptyActivitiesMessage: string;
     onUndo: (
         student: BoardStudent,
         activity: BoardActivity,
@@ -29,13 +32,23 @@ function formatTime(iso: string) {
         hour: "2-digit",
         minute: "2-digit",
     });
+}
 
+function submittedDay(createdAt: string) {
+    const iso = /Z|[+-]\d\d:?\d\d$/.test(createdAt) ? createdAt : `${createdAt}Z`;
+    return new Date(iso).toLocaleDateString("en-CA", { timeZone: "America/Mexico_City" });
+}
+
+function isLate(activity: BoardActivity, submission?: { createdAt: string }) {
+    if (!submission || !activity.activityDate) return false;
+    return submittedDay(submission.createdAt) > activity.activityDate;
 }
 
 export function SubmissionBoard({
     activities,
     students,
     highlightedId,
+    emptyActivitiesMessage,
     onUndo,
     onMark,
 }: SubmissionBoardProps) {
@@ -90,7 +103,7 @@ export function SubmissionBoard({
     if (activities.length === 0) {
         return (
             <div className="p-8 text-center text-sm text-[#5B6B80]">
-                Crea una actividad para empezar a registrar entregas.
+                {emptyActivitiesMessage}
             </div>
         );
     }
@@ -202,6 +215,24 @@ export function SubmissionBoard({
                                 {activities.map((activity) => {
                                     const submission =
                                         student.submissions[activity.id];
+                                    const late = isLate(activity, submission);
+                                    const statusColors = !submission
+                                        ? {
+                                            background: PALETTE.coralSoft,
+                                            text: PALETTE.coralText,
+                                            outline: PALETTE.coral,
+                                        }
+                                        : late
+                                            ? {
+                                                background: PALETTE.orangeSoft,
+                                                text: PALETTE.orangeText,
+                                                outline: PALETTE.orange,
+                                            }
+                                            : {
+                                                background: PALETTE.greenSoft,
+                                                text: PALETTE.greenText,
+                                                outline: PALETTE.green,
+                                            };
 
                                     return (
                                         <td
@@ -224,26 +255,33 @@ export function SubmissionBoard({
                                                         )
                                                     }
                                                     title="Clic para quitar esta entrega"
-                                                    aria-label={`Quitar la entrega de ${student.name} en ${activity.title}`}
-                                                    className="inline-flex items-center gap-1.5 rounded-full bg-[#187A4C]/15 px-3 py-1.5 text-xs font-semibold text-[#0F5233] transition-shadow hover:ring-2 hover:ring-[#187A4C]/40 focus-visible:outline focus-visible:outline-offset-2 focus-visible:outline-[#187A4C]"
+                                                    aria-label={`${late ? "Quitar la entrega a destiempo" : "Quitar la entrega"} de ${student.name} en ${activity.title}`}
+                                                    className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-shadow hover:ring-2 hover:ring-black/10 focus-visible:outline focus-visible:outline-offset-2"
+                                                    style={{
+                                                        backgroundColor: `#${statusColors.background}`,
+                                                        color: `#${statusColors.text}`,
+                                                        outlineColor: `#${statusColors.outline}`,
+                                                    }}
                                                 >
                                                     <Check size={14} strokeWidth={3} />
-                                                    Entregó
+                                                    {late ? "A destiempo" : "Entregó"}
                                                 </button>
                                             ) : (
                                                 <button
-
                                                     type="button"
                                                     onClick={() => onMark(student, activity)}
                                                     title="Clic para marcar como entregada"
                                                     aria-label={`Marcar la entrega de ${student.name} en ${activity.title}`}
-                                                    className="inline-flex items-center gap-1.5 rounded-full bg-[#FF6B5B]/15 px-3 py-1.5 text-xs font-semibold text-[#9A2A1E] transition-shadow hover:ring-2 hover:ring-[#FF6B5B]/40 focus-visible:outline focus-visible:outline-offset-2 focus-visible:outline-[#FF6B5B]"
+                                                    className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-shadow hover:ring-2 hover:ring-black/10 focus-visible:outline focus-visible:outline-offset-2"
+                                                    style={{
+                                                        backgroundColor: `#${statusColors.background}`,
+                                                        color: `#${statusColors.text}`,
+                                                        outlineColor: `#${statusColors.outline}`,
+                                                    }}
                                                 >
                                                     <Clock size={14} />
                                                     Pendiente
                                                 </button>
-
-
                                             )}
                                         </td>
                                     );

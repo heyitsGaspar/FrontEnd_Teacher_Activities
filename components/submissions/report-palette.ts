@@ -13,6 +13,9 @@ export const PALETTE = {
     greenText: "0F5233",
     coralSoft: "FFE0DC",
     coralText: "9A2A1E",
+    orange: "F28C28",
+    orangeSoft: "FFD9A8",
+    orangeText: "8A4B00",
     amber: "F5B041",
     amberSoft: "FFF4C7",
 

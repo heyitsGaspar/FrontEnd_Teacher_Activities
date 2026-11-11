@@ -16,6 +16,7 @@ import {
 import type { BoardActivity, BoardStudent } from "@/types/submissions";
 
 import { PALETTE, argb, solid, ratioColors } from "./report-palette";
+import { isActivityInTrimester, TRIMESTERS } from "./trimester-utils";
 
 interface SubmissionsExportButtonsProps {
     activities: BoardActivity[];
@@ -76,7 +77,7 @@ const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 type Group = { subject: string; items: BoardActivity[] };
 
-type ExcelTarget = number | "tabs" | "files";
+type ExcelTarget = number | "tabs" | "files" | { trimester: number };
 
 const NO_SUBJECT = "Sin materia";
 
@@ -120,6 +121,20 @@ function sheetName(subject: string, used: Set<string>) {
 
 function countDone(student: BoardStudent, acts: BoardActivity[]) {
     return acts.filter((a) => student.submissions[a.id]).length;
+}
+
+function submittedDay(createdAt: string) {
+    const iso = /Z|[+-]\d\d:?\d\d$/.test(createdAt) ? createdAt : `${createdAt}Z`;
+    return new Date(iso).toLocaleDateString("en-CA", { timeZone: "America/Mexico_City" });
+}
+
+function isLate(activity: BoardActivity, submission?: { createdAt: string }) {
+    if (!submission || !activity.activityDate) return false;
+    return submittedDay(submission.createdAt) > activity.activityDate;
+}
+
+function countLate(student: BoardStudent, acts: BoardActivity[]) {
+    return acts.filter((a) => isLate(a, student.submissions[a.id])).length;
 }
 
 /* Banda azul + franja amarilla (filas 1 y 2) con título y fecha */
@@ -176,6 +191,7 @@ function buildSubjectSheet(
 
         return {
             delivered,
+            late: countLate(student, acts),
             pending: n - delivered,
             ratio: n ? delivered / n : 0,
         };
@@ -327,18 +343,26 @@ function buildSubjectSheet(
         nameCell.alignment = { vertical: "middle", indent: 1 };
 
         acts.forEach((activity, j) => {
-            const done = Boolean(student.submissions[activity.id]);
+            const submission = student.submissions[activity.id];
+            const done = Boolean(submission);
+            const late = isLate(activity, submission);
             const cell = row.getCell(j + 2);
 
             cell.value = compact
                 ? done ? "✓" : "✕"
-                : done ? "✓ Entregó" : "✕ Pendiente";
+                : !done ? "✕ Pendiente" : late ? "✓ A destiempo" : "✓ Entregó";
 
-            cell.fill = solid(done ? PALETTE.greenSoft : PALETTE.coralSoft);
+            const statusColor = !done
+                ? { bg: PALETTE.coralSoft, text: PALETTE.coralText }
+                : late
+                    ? { bg: PALETTE.orangeSoft, text: PALETTE.orangeText }
+                    : { bg: PALETTE.greenSoft, text: PALETTE.greenText };
+
+            cell.fill = solid(statusColor.bg);
             cell.font = {
                 bold: true,
                 size: compact ? 12 : 10,
-                color: argb(done ? PALETTE.greenText : PALETTE.coralText),
+                color: argb(statusColor.text),
             };
             cell.alignment = { horizontal: "center", vertical: "middle" };
             cell.border = cellGap;
@@ -419,8 +443,7 @@ function buildSubjectSheet(
     sheet.mergeCells(legendRow, 1, legendRow, totalCols);
 
     const legend = sheet.getCell(legendRow, 1);
-    legend.value =
-        "✓ Entregó   ·   ✕ Pendiente   ·   Color del %: verde 100%, amarillo 50% o más, coral menos de 50%";
+    legend.value = "Verde: entregó a tiempo · Naranja: entregó a destiempo · Rojo: pendiente";
     legend.font = { italic: true, size: 9, color: argb(PALETTE.gray) };
     legend.alignment = { indent: 1 };
 
@@ -677,12 +700,43 @@ export function SubmissionsExportButtons({
         );
     };
 
+    const exportTrimester = async (id: number) => {
+        const trimester = TRIMESTERS.find((item) => item.id === id);
+        if (!trimester) throw new Error(`Trimestre no reconocido: ${id}`);
+
+        const trimesterGroups = groupBySubject(
+            activities.filter((activity) => isActivityInTrimester(activity, id))
+        );
+        if (trimesterGroups.length === 0) return;
+
+        const workbook = await newWorkbook();
+        const used = new Set<string>();
+
+        trimesterGroups.forEach((group, index) => {
+            buildSubjectSheet(
+                workbook,
+                sheetName(group.subject, used),
+                `${group.subject} · ${trimester.label}`,
+                group.items,
+                students,
+                index
+            );
+        });
+
+        downloadBlob(
+            await workbook.xlsx.writeBuffer(),
+            `entregas-trimestre-${id}-${fileStamp()}.xlsx`
+        );
+    };
+
     const exportExcel = async (target: ExcelTarget) => {
         try {
             setExporting("excel");
 
             if (typeof target === "number") {
                 await exportSingle(target);
+            } else if (typeof target === "object") {
+                await exportTrimester(target.trimester);
             } else if (target === "tabs") {
                 await exportTabs();
             } else {
@@ -743,6 +797,26 @@ export function SubmissionsExportButtons({
                             </DropdownMenuItem>
                         </>
                     )}
+
+                    <DropdownMenuSeparator />
+                    {TRIMESTERS.map((trimester) => {
+                        const count = activities.filter((activity) =>
+                            isActivityInTrimester(activity, trimester.id)
+                        ).length;
+
+                        return (
+                            <DropdownMenuItem
+                                key={trimester.id}
+                                disabled={count === 0}
+                                onClick={() => exportExcel({ trimester: trimester.id })}
+                            >
+                                <span className="flex-1">{trimester.label}</span>
+                                <span className="text-xs text-[#6B7A90]">
+                                    {count} {count === 1 ? "actividad" : "actividades"}
+                                </span>
+                            </DropdownMenuItem>
+                        );
+                    })}
                 </DropdownMenuContent>
             </DropdownMenu>
         </div>
