@@ -11,7 +11,7 @@ import { AppDialog } from "@/components/shared/AppDialog";
 import { AppConfirmDialog } from "@/components/shared/AppConfirmDialog";
 
 import { PALETTE } from "./report-palette";
-import { isActivityInTrimester, TRIMESTERS } from "./trimester-utils";
+import { getTrimesterLabel, TRIMESTERS } from "./trimester-utils";
 import { playTone } from "./scan-feedback";
 import { ScanPanel, type ScanResult } from "./ScanPanel";
 import { SubmissionBoard } from "./SubmissionBoard";
@@ -48,9 +48,6 @@ type MarkTarget = {
     activity: BoardActivity;
 };
 
-
-
-
 export function SubmissionsContent() {
 
     const [markTarget, setMarkTarget] = useState<MarkTarget | null>(null);
@@ -58,7 +55,7 @@ export function SubmissionsContent() {
     const [marking, setMarking] = useState(false);
     const [board, setBoard] = useState<SubmissionBoardData | null>(null);
     const [loading, setLoading] = useState(true);
-    const [trimesterFilter, setTrimesterFilter] = useState<number | "all">("all");
+    const [trimesterFilter, setTrimesterFilter] = useState<number | "all">(1);
     const [subjectFilter, setSubjectFilter] = useState("");
 
     const [scanResult, setScanResult] = useState<ScanResult | null>(null);
@@ -78,14 +75,14 @@ export function SubmissionsContent() {
     const scanInputRef = useRef<HTMLInputElement>(null);
     const highlightTimer = useRef<number | null>(null);
 
-    const students = board?.students ?? [];
     const activities = board?.activities ?? [];
+    const students = board?.students ?? [];
     const trimesterActivities =
         trimesterFilter === "all"
             ? activities
-            : activities.filter((activity) =>
-                isActivityInTrimester(activity, trimesterFilter)
-            );
+            : activities.filter(
+                  (activity) => activity.trimester === trimesterFilter
+              );
     const subjectOptions = Array.from(
         new Set(
             trimesterActivities.map(
@@ -102,8 +99,7 @@ export function SubmissionsContent() {
     const selectedTrimesterLabel =
         trimesterFilter === "all"
             ? ""
-            : TRIMESTERS.find((trimester) => trimester.id === trimesterFilter)?.label ??
-              "este trimestre";
+            : getTrimesterLabel(trimesterFilter);
     const emptyActivitiesMessage =
         trimesterActivities.length === 0
             ? trimesterFilter === "all"
@@ -430,17 +426,18 @@ export function SubmissionsContent() {
                                     id="submission-trimester-filter"
                                     value={trimesterFilter}
                                     onChange={(event) => {
-                                        setTrimesterFilter(
+                                        const nextFilter =
                                             event.target.value === "all"
                                                 ? "all"
-                                                : Number(event.target.value)
-                                        );
+                                                : Number(event.target.value);
+
+                                        setTrimesterFilter(nextFilter);
                                         setSubjectFilter("");
                                     }}
                                     disabled={loading}
-                                    className="h-9 rounded-md border border-[#D5DEE8] bg-white px-3 text-sm font-medium text-[#1F2A44] outline-none focus-visible:ring-2 focus-visible:ring-[#187A4C]"
+                                    className="h-9 rounded-md border border-[#9199a2] bg-white px-3 text-sm font-medium text-[#1F2A44] outline-none focus-visible:ring-2 focus-visible:ring-[#187A4C]"
                                 >
-                                    <option value="all">Todas</option>
+                                    <option value="all">Todos</option>
                                     {TRIMESTERS.map((trimester) => (
                                         <option key={trimester.id} value={trimester.id}>
                                             {trimester.label}
@@ -460,8 +457,11 @@ export function SubmissionsContent() {
                                     id="submission-subject-filter"
                                     value={subjectFilter}
                                     onChange={(event) => setSubjectFilter(event.target.value)}
-                                    disabled={loading || subjectOptions.length === 0}
-                                    className="h-9 max-w-52 rounded-md border border-[#D5DEE8] bg-white px-3 text-sm font-medium text-[#1F2A44] outline-none focus-visible:ring-2 focus-visible:ring-[#187A4C] disabled:cursor-not-allowed disabled:opacity-60"
+                                    disabled={
+                                        loading ||
+                                        subjectOptions.length === 0
+                                    }
+                                    className="h-9 max-w-52 rounded-md border border-[#9199a2] bg-white px-3 text-sm font-medium text-[#1F2A44] outline-none focus-visible:ring-2 focus-visible:ring-[#187A4C] disabled:cursor-not-allowed disabled:opacity-60"
                                 >
                                     <option value="">Todas las materias</option>
                                     {subjectOptions.map((subject) => (

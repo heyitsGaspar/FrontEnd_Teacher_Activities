@@ -18,6 +18,7 @@ import { DeliveryStatus } from "./DeliveryStatus";
 import type { Activity } from "@/types/activities";
 
 import { formatActivityDate } from "./activity-utils";
+import { getTrimesterLabel } from "@/components/submissions/trimester-utils";
 
 interface ActivityTableProps {
     activities: Activity[];
@@ -95,6 +96,7 @@ export function ActivityTable({
                     <TableHead className="hidden md:table-cell">
                         Fecha
                     </TableHead>
+                    <TableHead>Trimestre</TableHead>
                     <TableHead className="hidden md:table-cell">Entregas</TableHead>
                     <TableHead className="text-right">Acciones</TableHead>
                 </TableRow>
@@ -114,6 +116,10 @@ export function ActivityTable({
                             <div className="flex flex-wrap items-center gap-2">
                                 <span className="font-medium text-[#1F2A44]">
                                     {activity.title}
+                                </span>
+
+                                <span className="rounded-full bg-[#FFF3BF] px-2.5 py-0.5 text-xs font-medium text-[#5C4A00] md:hidden">
+                                    {getTrimesterLabel(activity.trimester)}
                                 </span>
 
                                 {activity.active && (
@@ -140,6 +146,11 @@ export function ActivityTable({
                         <TableCell className="hidden whitespace-nowrap text-[#4A5568] md:table-cell">
                             {formatActivityDate(activity.activityDate)}
                         </TableCell>    
+                        <TableCell>
+                            <span className="whitespace-nowrap rounded-full bg-[#FFF3BF] px-2.5 py-1 text-xs font-medium text-[#5C4A00]">
+                                {getTrimesterLabel(activity.trimester)}
+                            </span>
+                        </TableCell>
                         <TableCell className="hidden md:table-cell">
                             <DeliveryStatus activity={activity} />
                         </TableCell>

@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import type { Activity } from "@/types/activities";
 
 import { formatActivityDate } from "./activity-utils";
+import { getTrimesterLabel } from "@/components/submissions/trimester-utils";
 
 interface ActiveActivityCardProps {
     activity: Activity | null;
@@ -80,6 +81,9 @@ export function ActiveActivityCard({
                                 {activity.subjectName}
                             </span>
 
+                            <span className="rounded-full bg-white/20 px-3 py-1 font-medium">
+                                {getTrimesterLabel(activity.trimester)}
+                            </span>
 
                             <span className="inline-flex items-center gap-1.5 text-white/90">
                                 <CalendarDays size={16} />

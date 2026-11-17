@@ -26,13 +26,14 @@ export interface ActivityFormValues {
     subjectId: string;
     title: string;
     activityDate: string;
+    trimester: number;
     activate: boolean;
 }
 
 const copy = {
     create: {
         title: "Nueva actividad",
-        description: "Elige la materia, el nombre y la fecha.",
+        description: "Elige la materia, el nombre, la fecha y el trimestre.",
         submit: "Crear actividad",
     },
     edit: {
@@ -78,12 +79,18 @@ function ActivityForm({
     const [activityDate, setActivityDate] = useState(
         mode === "edit" && activity ? activity.activityDate : todayISO()
     );
+    const [trimester, setTrimester] = useState<number | "">(
+        activity?.trimester ?? 1
+    );
     const [activate, setActivate] = useState(false);
 
     const canActivate = mode !== "edit";
     const noSubjects = !loadingSubjects && subjects.length === 0;
     const isValid =
-        subjectId !== "" && title.trim() !== "" && activityDate !== "";
+        subjectId !== "" &&
+        title.trim() !== "" &&
+        activityDate !== "" &&
+        trimester !== "";
 
     const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
@@ -96,6 +103,7 @@ function ActivityForm({
             subjectId,
             title: title.trim(),
             activityDate,
+            trimester: Number(trimester),
             activate: canActivate && activate,
         });
     };
@@ -171,6 +179,30 @@ function ActivityForm({
                 />
             </div>
 
+            <div className="space-y-2">
+                <Label htmlFor="activity-trimester">Trimestre</Label>
+
+                <select
+                    id="activity-trimester"
+                    value={trimester}
+                    onChange={(event) =>
+                        setTrimester(
+                            event.target.value === ""
+                                ? ""
+                                : Number(event.target.value)
+                        )
+                    }
+                    required
+                    className="h-10 w-full rounded-md border border-[#D5DEE8] bg-white px-3 text-sm text-[#1F2A44] outline-none focus-visible:border-[#187A4C] focus-visible:ring-2 focus-visible:ring-[#187A4C]/20"
+                >
+                    <option value="">Selecciona un trimestre</option>
+                    <option value={1}>Primer trimestre</option>
+                    <option value={2}>Segundo trimestre</option>
+                    <option value={3}>Tercer trimestre</option>
+                    <option value={4}>Cuarto trimestre</option>
+                </select>
+            </div>
+
             {canActivate && (
                 <label className="flex cursor-pointer items-start gap-3 rounded-xl border-2 border-[#E3E8EF] p-3 transition-colors has-checked:border-[#187A4C] has-checked:bg-[#187A4C]/5">
                     <input
@@ -226,6 +258,7 @@ export function ActivityDialog({
             <DialogContent className="sm:max-w-md">
                 <ActivityForm
                     {...formProps}
+                    key={`${formProps.mode}-${formProps.activity?.id ?? "new"}-${open}`}
                     onCancel={() => onOpenChange(false)}
                 />
             </DialogContent>

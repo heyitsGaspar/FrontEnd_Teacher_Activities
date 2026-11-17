@@ -7,6 +7,7 @@ import Link from "next/link";
 import { formatActivityDate } from "@/components/activities/activity-utils";
 
 import { PALETTE } from "./report-palette";
+import { getTrimesterLabel } from "./trimester-utils";
 
 import type {
     BoardActivity,
@@ -25,13 +26,6 @@ interface SubmissionBoardProps {
         submission: BoardSubmission
     ) => void;
     onMark: (student: BoardStudent, activity: BoardActivity) => void;
-}
-
-function formatTime(iso: string) {
-    return new Date(iso).toLocaleTimeString("es-MX", {
-        hour: "2-digit",
-        minute: "2-digit",
-    });
 }
 
 function submittedDay(createdAt: string) {
@@ -119,7 +113,7 @@ export function SubmissionBoard({
                     <tr>
                         <th
                             scope="col"
-                            className="sticky left-0 top-0 z-30 h-16 w-40 border-b border-r border-[#D5DEE8] bg-[#F7FAFC] px-4 text-left text-sm font-semibold text-[#1F2A44] sm:w-56"
+                            className="sticky left-0 top-0 z-30 h-24 w-40 border-b border-r border-[#D5DEE8] bg-[#F7FAFC] px-4 text-left text-sm font-semibold text-[#1F2A44] sm:w-56"
                         >
                             Alumno
                         </th>
@@ -145,7 +139,7 @@ export function SubmissionBoard({
                                 >
                                     <div
                                         tabIndex={0}
-                                        className="group relative h-16 w-36 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#FFD84D]"
+                                        className="group relative h-24 w-36 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#FFD84D]"
                                     >
                                         {/* Vista compacta */}
                                         <div className="flex h-full flex-col justify-center gap-1 px-3">
@@ -155,8 +149,12 @@ export function SubmissionBoard({
                                                 </span>
                                             )}
 
-                                            <span className="line-clamp-2 text-sm font-semibold leading-tight">
+                                            <span className="line-clamp-1 text-sm font-semibold leading-tight">
                                                 {activity.title}
+                                            </span>
+
+                                            <span className="w-fit max-w-full truncate rounded-full bg-[#FFF3BF] px-2 py-0.5 text-[10px] font-semibold text-[#5C4A00]">
+                                                {getTrimesterLabel(activity.trimester)}
                                             </span>
                                         </div>
 
@@ -174,6 +172,12 @@ export function SubmissionBoard({
                                                 <span className="text-[#4A5568]">
                                                     {formatActivityDate(
                                                         activity.activityDate
+                                                    )}
+                                                </span>
+
+                                                <span className="rounded-full bg-[#FFF3BF] px-3 py-1 font-medium text-[#5C4A00]">
+                                                    {getTrimesterLabel(
+                                                        activity.trimester
                                                     )}
                                                 </span>
                                             </div>
@@ -198,7 +202,7 @@ export function SubmissionBoard({
                             <tr
                                 key={student.id}
                                 id={`student-row-${student.id}`}
-                                className="scroll-mt-16"
+                                className="scroll-mt-24"
                             >
                                 <th
                                     scope="row"

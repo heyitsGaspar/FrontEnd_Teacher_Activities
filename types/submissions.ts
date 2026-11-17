@@ -3,6 +3,7 @@ export interface BoardActivity {
     title: string;
     /** Formato yyyy-MM-dd */
     activityDate: string;
+    trimester: number;
     subjectName: string;
     active: boolean;
 }

@@ -187,6 +187,7 @@ export function ActivitiesContent() {
                     subjectId: values.subjectId,
                     title: values.title,
                     activityDate: values.activityDate,
+                    trimester: values.trimester,
                 });
 
                 setActivityDialogOpen(false);

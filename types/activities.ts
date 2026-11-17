@@ -3,6 +3,7 @@ export interface Activity {
     title: string;
     /** Formato yyyy-MM-dd */
     activityDate: string;
+    trimester: number;
     subjectId: string;
     subjectName: string;
     active: boolean;
@@ -29,6 +30,7 @@ export interface ActivityPayload {
     subjectId: string;
     title: string;
     activityDate: string;
+    trimester: number;
 }
 
 export interface CreateActivityPayload extends ActivityPayload {
