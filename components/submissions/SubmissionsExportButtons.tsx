@@ -16,11 +16,16 @@ import {
 import type { BoardActivity, BoardStudent } from "@/types/submissions";
 
 import { PALETTE, argb, solid, ratioColors } from "./report-palette";
-import { isActivityInTrimester, TRIMESTERS } from "./trimester-utils";
+import {
+    filterActivitiesByTrimester,
+    getTrimesterLabel,
+    TRIMESTERS,
+} from "./trimester-utils";
 
 interface SubmissionsExportButtonsProps {
     activities: BoardActivity[];
     students: BoardStudent[];
+    trimesterFilter: number | "all";
     disabled?: boolean;
     onError: (message: string) => void;
 }
@@ -488,7 +493,8 @@ function buildSubjectSheet(
 function buildGeneralSheet(
     workbook: Workbook,
     groups: Group[],
-    students: BoardStudent[]
+    students: BoardStudent[],
+    titleSuffix = ""
 ) {
     const sheet = workbook.addWorksheet("General", {
         properties: { tabColor: argb(PALETTE.navy) },
@@ -497,7 +503,7 @@ function buildGeneralSheet(
 
     const totalCols = Math.max(5, groups.length + 2);
 
-    drawBand(sheet, "Resumen general por materia", totalCols);
+    drawBand(sheet, `Resumen general por materia${titleSuffix}`, totalCols);
     sheet.getRow(3).height = 10;
 
     const hairline = {
@@ -633,12 +639,28 @@ function buildGeneralSheet(
 export function SubmissionsExportButtons({
     activities,
     students,
+    trimesterFilter,
     disabled = false,
     onError,
 }: SubmissionsExportButtonsProps) {
     const [exporting, setExporting] = useState<"excel" | null>(null);
 
-    const groups = useMemo(() => groupBySubject(activities), [activities]);
+    const exportActivities = useMemo(
+        () => filterActivitiesByTrimester(activities, trimesterFilter),
+        [activities, trimesterFilter]
+    );
+    const groups = useMemo(
+        () => groupBySubject(exportActivities),
+        [exportActivities]
+    );
+    const trimesterTitleSuffix =
+        trimesterFilter === "all"
+            ? ""
+            : ` · ${getTrimesterLabel(trimesterFilter)}`;
+    const trimesterFileSuffix =
+        trimesterFilter === "all"
+            ? ""
+            : `-${fileSafe(getTrimesterLabel(trimesterFilter))}`;
 
     const isDisabled =
         disabled ||
@@ -664,7 +686,7 @@ export function SubmissionsExportButtons({
         buildSubjectSheet(
             workbook,
             sheetName(group.subject, new Set()),
-            group.subject,
+            `${group.subject}${trimesterTitleSuffix}`,
             group.items,
             students,
             index
@@ -672,7 +694,7 @@ export function SubmissionsExportButtons({
 
         downloadBlob(
             await workbook.xlsx.writeBuffer(),
-            `entregas-${fileSafe(group.subject)}-${fileStamp()}.xlsx`
+            `entregas-${fileSafe(group.subject)}${trimesterFileSuffix}-${fileStamp()}.xlsx`
         );
     };
 
@@ -681,13 +703,18 @@ export function SubmissionsExportButtons({
         const workbook = await newWorkbook();
         const used = new Set<string>(["general"]);
 
-        buildGeneralSheet(workbook, groups, students);
+        buildGeneralSheet(
+            workbook,
+            groups,
+            students,
+            trimesterTitleSuffix
+        );
 
         groups.forEach((group, index) => {
             buildSubjectSheet(
                 workbook,
                 sheetName(group.subject, used),
-                group.subject,
+                `${group.subject}${trimesterTitleSuffix}`,
                 group.items,
                 students,
                 index
@@ -696,7 +723,7 @@ export function SubmissionsExportButtons({
 
         downloadBlob(
             await workbook.xlsx.writeBuffer(),
-            `entregas-todas-las-materias-${fileStamp()}.xlsx`
+            `entregas-todas-las-materias${trimesterFileSuffix}-${fileStamp()}.xlsx`
         );
     };
 
@@ -705,7 +732,7 @@ export function SubmissionsExportButtons({
         if (!trimester) throw new Error(`Trimestre no reconocido: ${id}`);
 
         const trimesterGroups = groupBySubject(
-            activities.filter((activity) => isActivityInTrimester(activity, id))
+            filterActivitiesByTrimester(activities, id)
         );
         if (trimesterGroups.length === 0) return;
 
@@ -725,7 +752,7 @@ export function SubmissionsExportButtons({
 
         downloadBlob(
             await workbook.xlsx.writeBuffer(),
-            `entregas-trimestre-${id}-${fileStamp()}.xlsx`
+            `entregas-${fileSafe(trimester.label)}-${fileStamp()}.xlsx`
         );
     };
 
@@ -800,8 +827,9 @@ export function SubmissionsExportButtons({
 
                     <DropdownMenuSeparator />
                     {TRIMESTERS.map((trimester) => {
-                        const count = activities.filter((activity) =>
-                            isActivityInTrimester(activity, trimester.id)
+                        const count = filterActivitiesByTrimester(
+                            activities,
+                            trimester.id
                         ).length;
 
                         return (

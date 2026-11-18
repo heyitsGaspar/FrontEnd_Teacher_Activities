@@ -25,3 +25,14 @@ export function isActivityInTrimester(
 ) {
     return activity.trimester === trimesterId;
 }
+
+export function filterActivitiesByTrimester(
+    activities: BoardActivity[],
+    trimesterId: number | "all"
+) {
+    return trimesterId === "all"
+        ? activities
+        : activities.filter((activity) =>
+              isActivityInTrimester(activity, trimesterId)
+          );
+}

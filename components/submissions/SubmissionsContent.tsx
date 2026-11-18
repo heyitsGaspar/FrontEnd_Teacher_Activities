@@ -11,7 +11,11 @@ import { AppDialog } from "@/components/shared/AppDialog";
 import { AppConfirmDialog } from "@/components/shared/AppConfirmDialog";
 
 import { PALETTE } from "./report-palette";
-import { getTrimesterLabel, TRIMESTERS } from "./trimester-utils";
+import {
+    filterActivitiesByTrimester,
+    getTrimesterLabel,
+    TRIMESTERS,
+} from "./trimester-utils";
 import { playTone } from "./scan-feedback";
 import { ScanPanel, type ScanResult } from "./ScanPanel";
 import { SubmissionBoard } from "./SubmissionBoard";
@@ -77,12 +81,10 @@ export function SubmissionsContent() {
 
     const activities = board?.activities ?? [];
     const students = board?.students ?? [];
-    const trimesterActivities =
-        trimesterFilter === "all"
-            ? activities
-            : activities.filter(
-                  (activity) => activity.trimester === trimesterFilter
-              );
+    const trimesterActivities = filterActivitiesByTrimester(
+        activities,
+        trimesterFilter
+    );
     const subjectOptions = Array.from(
         new Set(
             trimesterActivities.map(
@@ -384,6 +386,7 @@ export function SubmissionsContent() {
                     <SubmissionsExportButtons
                         activities={activities}
                         students={students}
+                        trimesterFilter={trimesterFilter}
                         disabled={loading}
                         onError={(message) =>
                             setDialog({
